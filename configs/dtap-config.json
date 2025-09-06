@@ -1,0 +1,25 @@
+{
+  "autopot": {
+    "hp_pot_key": "F9",
+    "sp_pot_key": "F8",
+    "hp_percent": 90,
+    "sp_percent": 40,
+    "check_delay_ms": 10,
+    "enabled": true
+  },
+  "autobuff": {
+    "enabled": false,
+    "delay_ms": 5000
+  },
+  "spammer": {
+    "enabled": true,
+    "keys": ["F1", "F2", "F3"],
+    "delay_ms": 1,
+    "skill_cancel": true,
+    "double_click": true
+  },
+  "ui": {
+    "show_debug": false,
+    "log_level": "info"
+  }
+}

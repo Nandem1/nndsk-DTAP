@@ -9,10 +9,10 @@ import (
 	"time"
 	"unsafe"
 
-	"dtap-go/internal/autopot"
 	"dtap-go/internal/memory"
+	"dtap-go/internal/normal/autopot"
+	"dtap-go/internal/normal/spammer"
 	"dtap-go/internal/process"
-	"dtap-go/internal/spammer"
 	"dtap-go/pkg/config"
 	"dtap-go/pkg/constants"
 	"dtap-go/pkg/logger"
@@ -32,7 +32,7 @@ func main() {
 	logger.Global.SetLevel(logger.ParseLogLevel(cfg.UI.LogLevel))
 
 	// Mostrar información de la aplicación
-	logger.Info("%s v%s", constants.AppName, constants.AppVersion)
+	logger.Info("%s v%s - Versión Normal", constants.AppName, constants.AppVersion)
 	logger.Info("%s", constants.AppDesc)
 	logger.Info("===================================")
 

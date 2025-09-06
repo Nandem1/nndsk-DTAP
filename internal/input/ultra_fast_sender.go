@@ -3,7 +3,6 @@ package input
 import (
 	"sync"
 	"time"
-	"unsafe"
 
 	"dtap-go/pkg/constants"
 
@@ -12,19 +11,19 @@ import (
 
 // UltraFastSender provides the fastest possible input for WoE
 type UltraFastSender struct {
-	user32           *windows.LazyDLL
-	sendInput        *windows.LazyProc
-	postMessage      *windows.LazyProc
-	keybdEvent       *windows.LazyProc
-	
+	user32      *windows.LazyDLL
+	sendInput   *windows.LazyProc
+	postMessage *windows.LazyProc
+	keybdEvent  *windows.LazyProc
+
 	// Input queue for batching
-	inputQueue       chan InputEvent
-	queueMutex       sync.Mutex
-	
+	inputQueue chan InputEvent
+	queueMutex sync.Mutex
+
 	// Performance tracking
-	lastSendTime     time.Time
-	sendCount        int64
-	windowHandle     windows.Handle
+	lastSendTime time.Time
+	sendCount    int64
+	windowHandle windows.Handle
 }
 
 // InputEvent represents a queued input event
@@ -46,7 +45,7 @@ const (
 // NewUltraFastSender creates the fastest input sender
 func NewUltraFastSender() *UltraFastSender {
 	user32 := windows.NewLazySystemDLL("user32.dll")
-	
+
 	sender := &UltraFastSender{
 		user32:      user32,
 		sendInput:   user32.NewProc("SendInput"),
@@ -54,10 +53,10 @@ func NewUltraFastSender() *UltraFastSender {
 		keybdEvent:  user32.NewProc("keybd_event"),
 		inputQueue:  make(chan InputEvent, 100), // Buffer for 100 events
 	}
-	
+
 	// Start input processing goroutine
 	go sender.processInputQueue()
-	
+
 	return sender
 }
 
@@ -72,7 +71,7 @@ func (ufs *UltraFastSender) SendKeyUltraFast(key string) error {
 	if keyCode == 0 {
 		return nil
 	}
-	
+
 	// Use keybd_event for maximum speed (bypasses message queue)
 	ufs.keybdEvent.Call(
 		uintptr(keyCode),
@@ -80,20 +79,20 @@ func (ufs *UltraFastSender) SendKeyUltraFast(key string) error {
 		0, // KEYEVENTF_KEYDOWN
 		0,
 	)
-	
+
 	// Minimal delay for skill canceling
 	time.Sleep(100 * time.Microsecond) // 0.1ms instead of 1ms
-	
+
 	ufs.keybdEvent.Call(
 		uintptr(keyCode),
 		0,
 		2, // KEYEVENTF_KEYUP
 		0,
 	)
-	
+
 	ufs.sendCount++
 	ufs.lastSendTime = time.Now()
-	
+
 	return nil
 }
 
@@ -115,12 +114,12 @@ func (ufs *UltraFastSender) QueueKey(key string, inputType InputType) {
 	if keyCode == 0 {
 		return
 	}
-	
+
 	event := InputEvent{
 		Type:    inputType,
 		KeyCode: keyCode,
 	}
-	
+
 	select {
 	case ufs.inputQueue <- event:
 	default:
@@ -169,10 +168,10 @@ func (ufs *UltraFastSender) SendMouseClickUltraFast(x, y int32) error {
 	if ufs.windowHandle == 0 {
 		return nil
 	}
-	
+
 	// Convert coordinates to lParam
 	lParam := uintptr((y << 16) | (x & 0xFFFF))
-	
+
 	// Send mouse down
 	ufs.postMessage.Call(
 		uintptr(ufs.windowHandle),
@@ -180,10 +179,10 @@ func (ufs *UltraFastSender) SendMouseClickUltraFast(x, y int32) error {
 		1, // MK_LBUTTON
 		lParam,
 	)
-	
+
 	// Ultra-minimal delay
 	time.Sleep(50 * time.Microsecond)
-	
+
 	// Send mouse up
 	ufs.postMessage.Call(
 		uintptr(ufs.windowHandle),
@@ -191,7 +190,7 @@ func (ufs *UltraFastSender) SendMouseClickUltraFast(x, y int32) error {
 		0,
 		lParam,
 	)
-	
+
 	return nil
 }
 

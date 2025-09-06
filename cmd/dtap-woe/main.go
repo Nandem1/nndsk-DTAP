@@ -9,11 +9,11 @@ import (
 	"time"
 	"unsafe"
 
-	"dtap-go/internal/autopot"
 	"dtap-go/internal/memory"
-	"dtap-go/internal/monitoring"
 	"dtap-go/internal/process"
-	"dtap-go/internal/spammer"
+	"dtap-go/internal/woe/autopot"
+	"dtap-go/internal/woe/monitoring"
+	"dtap-go/internal/woe/spammer"
 	"dtap-go/pkg/config"
 	"dtap-go/pkg/constants"
 	"dtap-go/pkg/logger"
@@ -79,36 +79,36 @@ func main() {
 	// Inicializar servicios WoE optimizados
 	autopotService := autopot.NewWOEOptimizedService(woeConfig.ConvertToStandardConfig(), memClient, roHandle)
 	spammerService := spammer.NewWOEOptimizedSpammer(woeConfig.ConvertToStandardConfig(), roHandle)
-	
+
 	// Inicializar monitor de performance
 	performanceMonitor := monitoring.NewWOEPerformanceMonitor(memClient, autopotService, spammerService, roHandle)
 
 	// Mostrar configuración WoE
 	logger.Info("Configuración WoE:")
-	logger.Info("- HP Pot: %s (cuando HP < %d%%, emergencia < %d%%)", 
+	logger.Info("- HP Pot: %s (cuando HP < %d%%, emergencia < %d%%)",
 		woeConfig.AutoPot.HPPotKey, woeConfig.AutoPot.HPPercent, woeConfig.AutoPot.EmergencyHP)
-	logger.Info("- SP Pot: %s (cuando SP < %d%%, emergencia < %d%%)", 
+	logger.Info("- SP Pot: %s (cuando SP < %d%%, emergencia < %d%%)",
 		woeConfig.AutoPot.SPPotKey, woeConfig.AutoPot.SPPercent, woeConfig.AutoPot.EmergencySP)
-	logger.Info("- Check Delay: %dms (emergencia: %dms)", 
+	logger.Info("- Check Delay: %dms (emergencia: %dms)",
 		woeConfig.AutoPot.CheckDelay, woeConfig.AutoPot.EmergencyDelay)
-	logger.Info("- Smart Mode: %v, Predictive Mode: %v", 
+	logger.Info("- Smart Mode: %v, Predictive Mode: %v",
 		woeConfig.AutoPot.SmartMode, woeConfig.AutoPot.PredictiveMode)
 
 	if woeConfig.Spammer.Enabled {
-		logger.Info("- Spammer: HABILITADO (%d teclas, %dms delay, burst: %dms)", 
+		logger.Info("- Spammer: HABILITADO (%d teclas, %dms delay, burst: %dms)",
 			len(woeConfig.Spammer.Keys), woeConfig.Spammer.Delay, woeConfig.Spammer.BurstDelay)
 		logger.Info("- Teclas spammer: %v", woeConfig.Spammer.Keys)
-		logger.Info("- Skill Cancel: %v, Double Click: %v", 
+		logger.Info("- Skill Cancel: %v, Double Click: %v",
 			woeConfig.Spammer.SkillCancel, woeConfig.Spammer.DoubleClick)
-		logger.Info("- Burst Mode: %v, Ultra Fast: %v", 
+		logger.Info("- Burst Mode: %v, Ultra Fast: %v",
 			woeConfig.Spammer.BurstMode, woeConfig.Spammer.UltraFastMode)
 	} else {
 		logger.Info("- Spammer: DESHABILITADO")
 	}
 
-	logger.Info("- Performance: Target FPS: %d, Adaptive: %v", 
+	logger.Info("- Performance: Target FPS: %d, Adaptive: %v",
 		woeConfig.Performance.TargetFPS, woeConfig.Performance.AdaptiveMode)
-	logger.Info("- Monitoring: %v, Report Interval: %ds", 
+	logger.Info("- Monitoring: %v, Report Interval: %ds",
 		woeConfig.Monitoring.Enabled, woeConfig.Monitoring.ReportInterval)
 
 	logger.Info("Presiona Ctrl+C para salir...")
@@ -124,7 +124,7 @@ func main() {
 	// Iniciar servicios WoE optimizados
 	autopotService.Start(ctx)
 	spammerService.Start(ctx)
-	
+
 	if woeConfig.Monitoring.Enabled {
 		performanceMonitor.Start(ctx)
 	}
@@ -145,20 +145,20 @@ func main() {
 		case <-interrupt:
 			logger.Info("Saliendo...")
 			cancel() // Cancelar todas las goroutines
-			
+
 			// Mostrar estadísticas finales
 			if woeConfig.Monitoring.Enabled {
 				performanceMonitor.Stop()
 			}
-			
+
 			return
-			
+
 		case <-ticker.C:
 			// Mostrar estado optimizado
 			if woeConfig.UI.ShowPerformance {
 				displayOptimizedStatus(memClient, autopotService, spammerService)
 			}
-			
+
 		case <-reportTicker.C:
 			// Mostrar reporte de performance
 			if woeConfig.Monitoring.Enabled {
@@ -173,7 +173,7 @@ func displayOptimizedStatus(memClient *memory.OptimizedClient, autopotService *a
 	// Obtener valores de memoria (ultra-rápido con cache)
 	hp, maxHP, hpValid := memClient.GetHP()
 	sp, maxSP, spValid := memClient.GetSP()
-	
+
 	if !hpValid || !spValid {
 		fmt.Printf("\r[WoE] Memoria no disponible...")
 		return
@@ -186,21 +186,21 @@ func displayOptimizedStatus(memClient *memory.OptimizedClient, autopotService *a
 	// Obtener estadísticas de servicios
 	potCount, emergencyMode, _ := autopotService.GetStats()
 	spamCount, burstMode, activeKeys := spammerService.GetStats()
-	
+
 	// Obtener estadísticas de cache
 	cacheAge, cacheValid := memClient.GetCacheStats()
-	
+
 	// Mostrar estado compacto
 	status := fmt.Sprintf("\r[WoE] HP:%d/%d(%d%%) SP:%d/%d(%d%%) | Pots:%d | Spams:%d | Keys:%d | Cache:%v(%.1fms)",
 		hp, maxHP, hpPercent, sp, maxSP, spPercent, potCount, spamCount, activeKeys, cacheValid, float64(cacheAge.Nanoseconds())/1000000)
-	
+
 	if emergencyMode {
 		status += " [EMERGENCY]"
 	}
 	if burstMode {
 		status += " [BURST]"
 	}
-	
+
 	fmt.Print(status)
 }
 
