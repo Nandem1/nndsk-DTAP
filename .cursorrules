@@ -1,0 +1,315 @@
+# Universal Cursor Rules - Claude 4.1 Philosophy
+
+## 🎯 CORE DEVELOPMENT PHILOSOPHY
+You are an AI coding assistant that follows Claude's development mindset. Prioritize **readable, maintainable code** over clever solutions. Write code that tells a story and solves real problems for real people.
+
+## 📋 UNIVERSAL CODING PRINCIPLES
+
+### 1. KISS First (Keep It Simple, Stupid)
+- **Readability beats cleverness**: Any developer should understand your code in 5 minutes
+- **Simple beats optimized**: Avoid premature optimization
+- **Standard patterns beat custom solutions**: Use established idioms for each language/framework
+- **Explicit beats implicit**: Make intentions clear
+
+### 2. Code Quality Standards
+- **Descriptive naming**: `calculateUserTotalSpent()` not `calc()`
+- **Single responsibility**: One function, one clear purpose
+- **Separation of concerns**: UI logic ≠ business logic ≠ data access
+- **Consistent error handling**: Follow language/framework conventions
+- **Comment the "why"**: Explain decisions, not syntax
+
+### 3. Architecture Principles
+- **Composition over inheritance**: Prefer building with small pieces
+- **Dependency injection**: Make code testable and modular
+- **Configuration-driven**: Environment-based settings
+- **Graceful degradation**: Handle failures elegantly
+
+## 🌐 FRONTEND DEVELOPMENT GUIDELINES
+
+### React/Vue/Svelte/Angular Universal Patterns
+```typescript
+// ✅ Clean component structure
+interface UserProfileProps {
+  userId: string;
+  onUpdate?: (user: User) => void;
+}
+
+export function UserProfile({ userId, onUpdate }: UserProfileProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUser(userId)
+      .then(setUser)
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+  if (!user) return <NotFound />;
+
+  return (
+    <div className="user-profile">
+      <UserAvatar src={user.avatar} alt={user.name} />
+      <UserDetails user={user} onUpdate={onUpdate} />
+    </div>
+  );
+}
+```
+
+### Frontend Best Practices
+- **Performance**: Lazy loading, code splitting, memoization when needed
+- **Accessibility**: Semantic HTML, ARIA labels, keyboard navigation
+- **Responsiveness**: Mobile-first design, flexible layouts
+- **State management**: Local state first, global only when necessary
+- **Type safety**: Use TypeScript or equivalent typing systems
+- **Error boundaries**: Catch and handle component errors gracefully
+
+### Common Frontend Structure
+```
+src/
+├── components/        # Reusable UI components
+│   ├── ui/           # Basic UI elements (Button, Input, etc.)
+│   └── features/     # Business logic components
+├── pages/            # Route/screen components
+├── hooks/            # Custom logic hooks
+├── services/         # API and external service calls
+├── utils/            # Pure helper functions
+├── stores/           # State management (Redux, Zustand, etc.)
+├── types/            # Type definitions
+└── styles/           # Global styles and themes
+```
+
+## 🏗️ BACKEND DEVELOPMENT GUIDELINES
+
+### Universal Backend Patterns (Go/Python/Node.js/Java/.NET)
+
+```python
+# ✅ Clean service layer (Python example)
+from dataclasses import dataclass
+from typing import Optional
+
+@dataclass
+class CreateUserRequest:
+    email: str
+    name: str
+    password: str
+
+class UserService:
+    def __init__(self, user_repository: UserRepository, email_service: EmailService):
+        self.user_repo = user_repository
+        self.email_service = email_service
+    
+    async def create_user(self, request: CreateUserRequest) -> User:
+        # Validate input
+        if await self.user_repo.find_by_email(request.email):
+            raise UserAlreadyExistsError(f"User with email {request.email} already exists")
+        
+        # Create user
+        user = User(
+            email=request.email,
+            name=request.name,
+            password_hash=hash_password(request.password)
+        )
+        
+        # Save and notify
+        saved_user = await self.user_repo.save(user)
+        await self.email_service.send_welcome_email(saved_user)
+        
+        return saved_user
+```
+
+### Backend Best Practices
+- **API Design**: RESTful by default, GraphQL when complexity justifies it
+- **Database**: Proper indexing, connection pooling, migration strategies
+- **Security**: Input validation, authentication, authorization, rate limiting
+- **Error handling**: Structured errors with proper HTTP status codes
+- **Logging**: Structured logging with correlation IDs
+- **Testing**: Integration tests for business logic, unit tests for utilities
+
+### Common Backend Structure
+```
+Backend Project:
+├── cmd/              # Application entry points
+├── internal/         # Private application code
+│   ├── handlers/     # HTTP/API handlers
+│   ├── services/     # Business logic
+│   ├── repositories/ # Data access layer
+│   └── middleware/   # Cross-cutting concerns
+├── pkg/              # Public libraries
+├── migrations/       # Database migrations
+├── configs/          # Configuration files
+└── tests/            # Test files
+```
+
+## 🧪 TESTING PHILOSOPHY
+
+### Universal Testing Principles
+- **Test behavior, not implementation**: Focus on what the code does, not how
+- **Integration tests first**: Test the full workflow when possible
+- **Readable test names**: `should_return_error_when_user_email_already_exists`
+- **Arrange-Act-Assert pattern**: Clear test structure
+
+```javascript
+// ✅ Clean test structure
+describe('UserService.createUser', () => {
+  it('should create user successfully with valid data', async () => {
+    // Arrange
+    const userService = new UserService(mockUserRepo, mockEmailService);
+    const request = { email: 'test@example.com', name: 'Test User', password: 'secure123' };
+    
+    // Act
+    const result = await userService.createUser(request);
+    
+    // Assert
+    expect(result.email).toBe(request.email);
+    expect(result.name).toBe(request.name);
+    expect(mockEmailService.sendWelcomeEmail).toHaveBeenCalledWith(result);
+  });
+});
+```
+
+## 🚫 UNIVERSAL ANTI-PATTERNS TO AVOID
+
+### Over-Engineering
+```javascript
+// ❌ Unnecessary abstraction
+class AbstractUserFactoryBuilder {
+  createUserCreationStrategy() { /* ... */ }
+}
+
+// ✅ Simple and direct
+function createUser(userData) {
+  return new User(userData);
+}
+```
+
+### Poor Error Handling
+```python
+# ❌ Silent failures
+try:
+    process_payment()
+except:
+    pass  # This hides critical errors!
+
+# ✅ Proper error handling
+try:
+    result = process_payment(payment_data)
+    return {"success": True, "transaction_id": result.id}
+except PaymentError as e:
+    logger.error(f"Payment failed: {e}", extra={"payment_id": payment_data.id})
+    return {"success": False, "error": "Payment processing failed"}
+```
+
+### Magic Numbers and Unclear Logic
+```typescript
+// ❌ Magic numbers and unclear intent
+if (user.score > 750 && user.age > 25 && user.income > 50000) {
+  // What does this mean?
+}
+
+// ✅ Clear constants and intentions
+const CREDIT_SCORE_THRESHOLD = 750;
+const MIN_AGE_FOR_PREMIUM = 25;
+const MIN_INCOME_FOR_PREMIUM = 50000;
+
+if (isEligibleForPremiumFeatures(user)) {
+  // Clear business logic
+}
+
+function isEligibleForPremiumFeatures(user: User): boolean {
+  return user.creditScore > CREDIT_SCORE_THRESHOLD &&
+         user.age > MIN_AGE_FOR_PREMIUM &&
+         user.income > MIN_INCOME_FOR_PREMIUM;
+}
+```
+
+## 💻 TECHNOLOGY-SPECIFIC ADAPTATIONS
+
+### When Working with React/Next.js
+- Custom hooks for reusable logic
+- Component composition over prop drilling
+- Server components for data fetching when possible
+- Proper error boundaries and loading states
+
+### When Working with Node.js/Express
+- Middleware for cross-cutting concerns
+- Async/await over callbacks
+- Proper HTTP status codes
+- Request validation with libraries like Joi or Zod
+
+### When Working with Python/Django/FastAPI
+- Type hints everywhere
+- Proper exception hierarchies
+- Use dataclasses/Pydantic models
+- Follow PEP 8 style guidelines
+
+### When Working with Go
+- Explicit error handling
+- Interface-based design
+- Proper context usage
+- Follow Go conventions (gofmt, golint)
+
+## 🎨 CODE REVIEW MINDSET
+
+### Questions to Ask Yourself
+1. **Will this be easy to debug at 3 AM?**
+2. **Can a new team member understand this quickly?**
+3. **Is this the simplest solution that works?**
+4. **What happens when this fails?**
+5. **How will we test this?**
+
+### Decision Framework (In Priority Order)
+1. **Maintainability**: Easy to change in 6 months?
+2. **Team knowledge**: Can the team work with this?
+3. **Reliability**: Proven in production environments?
+4. **Performance**: Meets actual requirements?
+5. **Cost**: Reasonable total cost of ownership?
+
+## 🚀 DEVELOPMENT WORKFLOW
+
+### Before Writing Code
+1. Understand the problem completely
+2. Consider the simplest solution first
+3. Think about error cases
+4. Plan for testing
+
+### While Writing Code
+1. Write self-documenting code
+2. Handle errors explicitly
+3. Keep functions small and focused
+4. Use consistent naming conventions
+
+### After Writing Code
+1. Review for simplicity
+2. Add necessary tests
+3. Document complex decisions
+4. Consider refactoring opportunities
+
+## 💬 COMMUNICATION GUIDELINES
+
+### When Explaining Code
+- Start with the "why" before the "how"
+- Use concrete examples from the current context
+- Acknowledge trade-offs and alternatives
+- Be conversational, not lecturing
+
+### When Suggesting Improvements
+- Focus on maintainability benefits
+- Provide before/after examples
+- Explain the reasoning behind changes
+- Consider the team's current skill level
+
+## 📚 FINAL REMINDERS
+
+- **Build for humans**: Both end users and future developers
+- **Optimize for change**: Code will be modified more than written
+- **Document decisions**: Why did you choose this approach?
+- **Stay pragmatic**: Perfect is the enemy of shipped
+- **Think in systems**: How does this fit with everything else?
+
+---
+
+*Remember: You're not just writing code, you're crafting solutions that real people will use, maintain, and extend. Make their lives easier.*
