@@ -35,6 +35,24 @@ type Config struct {
 		ShowDebug bool   `json:"show_debug"`
 		LogLevel  string `json:"log_level"`
 	} `json:"ui"`
+
+	SkillMarkers struct {
+		Enabled bool    `json:"enabled"`
+		Opacity float32 `json:"opacity"`
+		Size    float32 `json:"size"`
+		Skills  map[string]struct {
+			Color   string `json:"color"`
+			Enabled bool   `json:"enabled"`
+		} `json:"skills"`
+	} `json:"skill_markers"`
+
+	RangeDisplay struct {
+		Enabled   bool    `json:"enabled"`
+		Color     string  `json:"color"`
+		Opacity   float32 `json:"opacity"`
+		Thickness float32 `json:"thickness"`
+		Segments  int     `json:"segments"`
+	} `json:"range_display"`
 }
 
 // DefaultConfig returns the default configuration
@@ -81,6 +99,47 @@ func DefaultConfig() *Config {
 		}{
 			ShowDebug: false,
 			LogLevel:  "info",
+		},
+		SkillMarkers: struct {
+			Enabled bool    `json:"enabled"`
+			Opacity float32 `json:"opacity"`
+			Size    float32 `json:"size"`
+			Skills  map[string]struct {
+				Color   string `json:"color"`
+				Enabled bool   `json:"enabled"`
+			} `json:"skills"`
+		}{
+			Enabled: true,
+			Opacity: 0.5,
+			Size:    4.8,
+			Skills: map[string]struct {
+				Color   string `json:"color"`
+				Enabled bool   `json:"enabled"`
+			}{
+				"stone_wall":  {Color: "0x7F008888", Enabled: true},
+				"fire_wall":   {Color: "0x7F880000", Enabled: true},
+				"sanctuary":   {Color: "0x7F00FFFF", Enabled: true},
+				"safety_wall": {Color: "0x7F880088", Enabled: true},
+				"fire_pillar": {Color: "0x7F888800", Enabled: true},
+				"magnus_ex":   {Color: "0x7F00FFFF", Enabled: true},
+				"pneuma":      {Color: "0x7F00FFFF", Enabled: true},
+				"ice_wall":    {Color: "0x7F880088", Enabled: true},
+				"quagmire":    {Color: "0x7F448844", Enabled: true},
+				"warp_portal": {Color: "0x7FFFFFFF", Enabled: true},
+			},
+		},
+		RangeDisplay: struct {
+			Enabled   bool    `json:"enabled"`
+			Color     string  `json:"color"`
+			Opacity   float32 `json:"opacity"`
+			Thickness float32 `json:"thickness"`
+			Segments  int     `json:"segments"`
+		}{
+			Enabled:   true,
+			Color:     "0x7F00FF00", // Green with 50% opacity
+			Opacity:   0.5,
+			Thickness: 2.0,
+			Segments:  32,
 		},
 	}
 }

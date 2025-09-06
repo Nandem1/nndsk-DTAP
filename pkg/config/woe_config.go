@@ -72,6 +72,31 @@ type WOEConfig struct {
 		ShowPerformance bool   `json:"show_performance"`
 		CompactMode     bool   `json:"compact_mode"`
 	} `json:"ui"`
+
+	// Skill markers for WoE tactical advantage
+	SkillMarkers struct {
+		Enabled        bool    `json:"enabled"`
+		Opacity        float32 `json:"opacity"`
+		Size           float32 `json:"size"`
+		WoEOptimized   bool    `json:"woe_optimized"`
+		ShowEnemyOnly  bool    `json:"show_enemy_only"`
+		ShowAlliedOnly bool    `json:"show_allied_only"`
+		Skills         map[string]struct {
+			Color   string `json:"color"`
+			Enabled bool   `json:"enabled"`
+		} `json:"skills"`
+	} `json:"skill_markers"`
+
+	// Range display for WoE tactical advantage
+	RangeDisplay struct {
+		Enabled          bool    `json:"enabled"`
+		Color            string  `json:"color"`
+		Opacity          float32 `json:"opacity"`
+		Thickness        float32 `json:"thickness"`
+		Segments         int     `json:"segments"`
+		WoEOptimized     bool    `json:"woe_optimized"`
+		ShowOnlyInCombat bool    `json:"show_only_in_combat"`
+	} `json:"range_display"`
 }
 
 // DefaultWOEConfig returns the default WoE-optimized configuration
@@ -174,6 +199,57 @@ func DefaultWOEConfig() *WOEConfig {
 			LogLevel:        "info",
 			ShowPerformance: true,
 			CompactMode:     true,
+		},
+		SkillMarkers: struct {
+			Enabled        bool    `json:"enabled"`
+			Opacity        float32 `json:"opacity"`
+			Size           float32 `json:"size"`
+			WoEOptimized   bool    `json:"woe_optimized"`
+			ShowEnemyOnly  bool    `json:"show_enemy_only"`
+			ShowAlliedOnly bool    `json:"show_allied_only"`
+			Skills         map[string]struct {
+				Color   string `json:"color"`
+				Enabled bool   `json:"enabled"`
+			} `json:"skills"`
+		}{
+			Enabled:        true,
+			Opacity:        0.7, // Más opaco para WoE
+			Size:           4.8,
+			WoEOptimized:   true,
+			ShowEnemyOnly:  false,
+			ShowAlliedOnly: false,
+			Skills: map[string]struct {
+				Color   string `json:"color"`
+				Enabled bool   `json:"enabled"`
+			}{
+				"stone_wall":  {Color: "0x7F008888", Enabled: true},
+				"fire_wall":   {Color: "0x7F880000", Enabled: true},
+				"sanctuary":   {Color: "0x7F00FFFF", Enabled: true},
+				"safety_wall": {Color: "0x7F880088", Enabled: true},
+				"fire_pillar": {Color: "0x7F888800", Enabled: true},
+				"magnus_ex":   {Color: "0x7F00FFFF", Enabled: true},
+				"pneuma":      {Color: "0x7F00FFFF", Enabled: true},
+				"ice_wall":    {Color: "0x7F880088", Enabled: true},
+				"quagmire":    {Color: "0x7F448844", Enabled: true},
+				"warp_portal": {Color: "0x7FFFFFFF", Enabled: true},
+			},
+		},
+		RangeDisplay: struct {
+			Enabled          bool    `json:"enabled"`
+			Color            string  `json:"color"`
+			Opacity          float32 `json:"opacity"`
+			Thickness        float32 `json:"thickness"`
+			Segments         int     `json:"segments"`
+			WoEOptimized     bool    `json:"woe_optimized"`
+			ShowOnlyInCombat bool    `json:"show_only_in_combat"`
+		}{
+			Enabled:          true,
+			Color:            "0x7F00FF00", // Green with 50% opacity
+			Opacity:          0.7,          // More opaque for WoE
+			Thickness:        3.0,          // Thicker for better visibility
+			Segments:         64,           // Smoother circle
+			WoEOptimized:     true,
+			ShowOnlyInCombat: false,
 		},
 	}
 }

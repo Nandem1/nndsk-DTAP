@@ -17,6 +17,7 @@ import (
 	"dtap-go/pkg/config"
 	"dtap-go/pkg/constants"
 	"dtap-go/pkg/logger"
+	"dtap-go/pkg/visual"
 
 	"golang.org/x/sys/windows"
 )
@@ -80,6 +81,12 @@ func main() {
 	autopotService := autopot.NewWOEOptimizedService(woeConfig.ConvertToStandardConfig(), memClient, roHandle)
 	spammerService := spammer.NewWOEOptimizedSpammer(woeConfig.ConvertToStandardConfig(), roHandle)
 
+	// Inicializar skill markers y range display para WoE
+	configAdapter := visual.NewConfigAdapter()
+	skillMarkerConfig := configAdapter.ConvertFromWOEConfig(woeConfig)
+	rangeDisplayConfig := configAdapter.ConvertRangeDisplayFromWOEConfig(woeConfig)
+	overlayManager := visual.NewOverlayManager(skillMarkerConfig, rangeDisplayConfig, logger.Global)
+
 	// Inicializar monitor de performance
 	performanceMonitor := monitoring.NewWOEPerformanceMonitor(memClient, autopotService, spammerService, roHandle)
 
@@ -111,6 +118,22 @@ func main() {
 	logger.Info("- Monitoring: %v, Report Interval: %ds",
 		woeConfig.Monitoring.Enabled, woeConfig.Monitoring.ReportInterval)
 
+	if woeConfig.SkillMarkers.Enabled {
+		logger.Info("- Skill Markers: HABILITADO (WoE optimizado)")
+		logger.Info("- Opacidad: %.1f, Tamaño: %.1f, WoE Optimizado: %v",
+			woeConfig.SkillMarkers.Opacity, woeConfig.SkillMarkers.Size, woeConfig.SkillMarkers.WoEOptimized)
+	} else {
+		logger.Info("- Skill Markers: DESHABILITADO")
+	}
+
+	if woeConfig.RangeDisplay.Enabled {
+		logger.Info("- Range Display: HABILITADO (WoE optimizado)")
+		logger.Info("- Color: %s, Opacidad: %.1f, Grosor: %.1f, WoE Optimizado: %v",
+			woeConfig.RangeDisplay.Color, woeConfig.RangeDisplay.Opacity, woeConfig.RangeDisplay.Thickness, woeConfig.RangeDisplay.WoEOptimized)
+	} else {
+		logger.Info("- Range Display: DESHABILITADO")
+	}
+
 	logger.Info("Presiona Ctrl+C para salir...")
 
 	// Canal para manejar interrupciones
@@ -125,6 +148,14 @@ func main() {
 	autopotService.Start(ctx)
 	spammerService.Start(ctx)
 
+	// Iniciar overlay manager para skill markers
+	if err := overlayManager.Start(); err != nil {
+		logger.Error("Error iniciando overlay manager: %v", err)
+	} else {
+		logger.Info("Overlay manager iniciado (WoE optimizado)")
+	}
+	defer overlayManager.Stop()
+
 	if woeConfig.Monitoring.Enabled {
 		performanceMonitor.Start(ctx)
 	}
@@ -132,6 +163,15 @@ func main() {
 	// Loop principal optimizado
 	ticker := time.NewTicker(500 * time.Millisecond) // Mostrar estado cada 500ms
 	defer ticker.Stop()
+
+	// Ticker para simular skill markers en WoE (más frecuente para testing)
+	skillTicker := time.NewTicker(3 * time.Second)
+	defer skillTicker.Stop()
+
+	// Simular skill markers una vez al inicio si están habilitados
+	if woeConfig.SkillMarkers.Enabled {
+		overlayManager.SimulateSkillDetection()
+	}
 
 	// Performance report ticker
 	var reportTicker *time.Ticker
@@ -156,7 +196,7 @@ func main() {
 		case <-ticker.C:
 			// Mostrar estado optimizado
 			if woeConfig.UI.ShowPerformance {
-				displayOptimizedStatus(memClient, autopotService, spammerService)
+				displayOptimizedStatus(memClient, autopotService, spammerService, overlayManager)
 			}
 
 		case <-reportTicker.C:
@@ -164,12 +204,17 @@ func main() {
 			if woeConfig.Monitoring.Enabled {
 				performanceMonitor.PrintPerformanceReport()
 			}
+		case <-skillTicker.C:
+			// Simular detección de skills en WoE (más frecuente para testing)
+			if woeConfig.SkillMarkers.Enabled {
+				overlayManager.SimulateSkillDetection()
+			}
 		}
 	}
 }
 
 // displayOptimizedStatus muestra el estado optimizado del sistema
-func displayOptimizedStatus(memClient *memory.OptimizedClient, autopotService *autopot.WOEOptimizedService, spammerService *spammer.WOEOptimizedSpammer) {
+func displayOptimizedStatus(memClient *memory.OptimizedClient, autopotService *autopot.WOEOptimizedService, spammerService *spammer.WOEOptimizedSpammer, overlayManager *visual.OverlayManager) {
 	// Obtener valores de memoria (ultra-rápido con cache)
 	hp, maxHP, hpValid := memClient.GetHP()
 	sp, maxSP, spValid := memClient.GetSP()
@@ -190,9 +235,12 @@ func displayOptimizedStatus(memClient *memory.OptimizedClient, autopotService *a
 	// Obtener estadísticas de cache
 	cacheAge, cacheValid := memClient.GetCacheStats()
 
+	// Obtener estadísticas de skill markers
+	markerCount := len(overlayManager.GetActiveMarkers())
+
 	// Mostrar estado compacto
-	status := fmt.Sprintf("\r[WoE] HP:%d/%d(%d%%) SP:%d/%d(%d%%) | Pots:%d | Spams:%d | Keys:%d | Cache:%v(%.1fms)",
-		hp, maxHP, hpPercent, sp, maxSP, spPercent, potCount, spamCount, activeKeys, cacheValid, float64(cacheAge.Nanoseconds())/1000000)
+	status := fmt.Sprintf("\r[WoE] HP:%d/%d(%d%%) SP:%d/%d(%d%%) | Pots:%d | Spams:%d | Keys:%d | Markers:%d | Cache:%v(%.1fms)",
+		hp, maxHP, hpPercent, sp, maxSP, spPercent, potCount, spamCount, activeKeys, markerCount, cacheValid, float64(cacheAge.Nanoseconds())/1000000)
 
 	if emergencyMode {
 		status += " [EMERGENCY]"

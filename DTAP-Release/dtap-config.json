@@ -1,0 +1,79 @@
+{
+  "autopot": {
+    "hp_pot_key": "F1",
+    "sp_pot_key": "F2",
+    "hp_percent": 50,
+    "sp_percent": 30,
+    "check_delay_ms": 100,
+    "enabled": true
+  },
+  "autobuff": {
+    "enabled": false,
+    "delay_ms": 5000
+  },
+  "spammer": {
+    "enabled": true,
+    "keys": ["F4"],
+    "delay_ms": 1,
+    "skill_cancel": true,
+    "double_click": true
+  },
+  "ui": {
+    "show_debug": false,
+    "log_level": "info"
+  },
+  "skill_markers": {
+    "enabled": true,
+    "opacity": 0.5,
+    "size": 4.8,
+    "skills": {
+      "stone_wall": {
+        "color": "0x7F008888",
+        "enabled": true
+      },
+      "fire_wall": {
+        "color": "0x7F880000",
+        "enabled": true
+      },
+      "sanctuary": {
+        "color": "0x7F00FFFF",
+        "enabled": true
+      },
+      "safety_wall": {
+        "color": "0x7F880088",
+        "enabled": true
+      },
+      "fire_pillar": {
+        "color": "0x7F888800",
+        "enabled": true
+      },
+      "magnus_ex": {
+        "color": "0x7F00FFFF",
+        "enabled": true
+      },
+      "pneuma": {
+        "color": "0x7F00FFFF",
+        "enabled": true
+      },
+      "ice_wall": {
+        "color": "0x7F880088",
+        "enabled": true
+      },
+      "quagmire": {
+        "color": "0x7F448844",
+        "enabled": true
+      },
+      "warp_portal": {
+        "color": "0x7FFFFFFF",
+        "enabled": true
+      }
+    }
+  },
+  "range_display": {
+    "enabled": true,
+    "color": "0x7F00FF00",
+    "opacity": 0.5,
+    "thickness": 2.0,
+    "segments": 32
+  }
+}

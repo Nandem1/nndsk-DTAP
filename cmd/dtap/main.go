@@ -15,7 +15,9 @@ import (
 	"dtap-go/internal/process"
 	"dtap-go/pkg/config"
 	"dtap-go/pkg/constants"
+	"dtap-go/pkg/injection"
 	"dtap-go/pkg/logger"
+	"dtap-go/pkg/visual"
 
 	"golang.org/x/sys/windows"
 )
@@ -77,6 +79,16 @@ func main() {
 	spammerService := spammer.NewSpammerService(cfg, roHandle)
 	autopotService := autopot.NewAutoPotService(cfg, memClient, roHandle)
 
+	// Inicializar skill markers y range display
+	configAdapter := visual.NewConfigAdapter()
+	skillMarkerConfig := configAdapter.ConvertFromNormalConfig(cfg)
+	rangeDisplayConfig := configAdapter.ConvertRangeDisplayFromNormalConfig(cfg)
+	overlayManager := visual.NewOverlayManager(skillMarkerConfig, rangeDisplayConfig, logger.Global)
+
+	// Inicializar sistema de inyección
+	injectionConfig := injection.DefaultInjectionConfig()
+	injectionManager := injection.NewInjectionManager(roProcess.PID, injectionConfig.DLLPath, logger.Global)
+
 	// Mostrar configuración
 	logger.Info("Configuración:")
 	logger.Info("- HP Pot: %s (cuando HP < %d%%)", cfg.AutoPot.HPPotKey, cfg.AutoPot.HPPercent)
@@ -96,6 +108,35 @@ func main() {
 		logger.Info("- Spammer: DESHABILITADO")
 	}
 
+	if cfg.SkillMarkers.Enabled {
+		logger.Info("- Skill Markers: HABILITADO (marcado de habilidades en el piso)")
+		logger.Info("- Opacidad: %.1f, Tamaño: %.1f", cfg.SkillMarkers.Opacity, cfg.SkillMarkers.Size)
+	} else {
+		logger.Info("- Skill Markers: DESHABILITADO")
+	}
+
+	if cfg.RangeDisplay.Enabled {
+		logger.Info("- Range Display: HABILITADO (círculo de rango del personaje)")
+		logger.Info("- Color: %s, Opacidad: %.1f, Grosor: %.1f", cfg.RangeDisplay.Color, cfg.RangeDisplay.Opacity, cfg.RangeDisplay.Thickness)
+	} else {
+		logger.Info("- Range Display: DESHABILITADO")
+	}
+
+	if injectionConfig.Enabled {
+		logger.Info("- Inyección DLL: HABILITADO (funcionalidades avanzadas)")
+		logger.Info("- DLL: %s, Memoria Compartida: %s", injectionConfig.DLLPath, injectionConfig.SharedMemoryName)
+
+		if injectionConfig.EnableGepardBypass {
+			logger.Info("- Gepard Bypass: HABILITADO (protección anti-inyección)")
+			logger.Info("- Auto-detección: %v, Bypass CRC: %v, Restaurar funciones: %v",
+				injectionConfig.AutoDetectGepard, injectionConfig.BypassCRC, injectionConfig.RestoreFunctions)
+		} else {
+			logger.Info("- Gepard Bypass: DESHABILITADO")
+		}
+	} else {
+		logger.Info("- Inyección DLL: DESHABILITADO")
+	}
+
 	logger.Info("Presiona Ctrl+C para salir...")
 
 	// Canal para manejar interrupciones
@@ -110,9 +151,56 @@ func main() {
 	spammerService.Start(ctx)
 	autopotService.Start(ctx)
 
+	// Iniciar overlay manager
+	if err := overlayManager.Start(); err != nil {
+		logger.Error("Error iniciando overlay manager: %v", err)
+	} else {
+		logger.Info("Overlay manager iniciado")
+	}
+	defer overlayManager.Stop()
+
+	// Inicializar sistema de inyección
+	if injectionConfig.Enabled {
+		if err := injectionManager.Initialize(); err != nil {
+			logger.Error("Error inicializando sistema de inyección: %v", err)
+		} else {
+			logger.Info("Sistema de inyección inicializado")
+
+			// Configurar ventana de RO
+			if err := injectionManager.SetROWindowHandle(uintptr(roHandle)); err != nil {
+				logger.Error("Error configurando ventana de RO: %v", err)
+			}
+
+			// Configurar M2E (skill markers)
+			if err := injectionManager.EnableM2E(cfg.SkillMarkers.Enabled); err != nil {
+				logger.Error("Error configurando M2E: %v", err)
+			}
+
+			// Intentar inyectar DLL
+			if injectionConfig.AutoInject {
+				if err := injectionManager.Inject(); err != nil {
+					logger.Error("Error inyectando DLL: %v", err)
+					logger.Info("Nota: La DLL 'dtap-hook.dll' debe estar en el directorio del ejecutable")
+				} else {
+					logger.Info("DLL inyectada exitosamente")
+				}
+			}
+		}
+		defer injectionManager.Cleanup()
+	}
+
 	// Loop principal - solo para mostrar estado
 	ticker := time.NewTicker(1 * time.Second) // Mostrar estado cada segundo
 	defer ticker.Stop()
+
+	// Ticker para simular skill markers (solo para testing)
+	skillTicker := time.NewTicker(5 * time.Second)
+	defer skillTicker.Stop()
+
+	// Simular skill markers una vez al inicio si están habilitados
+	if cfg.SkillMarkers.Enabled {
+		overlayManager.SimulateSkillDetection()
+	}
 
 	for {
 		select {
@@ -137,8 +225,14 @@ func main() {
 			spPercent := int((float64(sp) / float64(maxSP)) * 100)
 
 			// Mostrar estado
-			fmt.Printf("\rHP: %d/%d (%d%%) | SP: %d/%d (%d%%)",
-				hp, maxHP, hpPercent, sp, maxSP, spPercent)
+			markerCount := overlayManager.GetActiveMarkers()
+			fmt.Printf("\rHP: %d/%d (%d%%) | SP: %d/%d (%d%%) | Markers: %d",
+				hp, maxHP, hpPercent, sp, maxSP, spPercent, len(markerCount))
+		case <-skillTicker.C:
+			// Simular detección de skills cada 5 segundos (solo para testing)
+			if cfg.SkillMarkers.Enabled {
+				overlayManager.SimulateSkillDetection()
+			}
 		}
 	}
 }

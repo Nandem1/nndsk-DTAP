@@ -1,0 +1,113 @@
+{
+  "autopot": {
+    "hp_pot_key": "F1",
+    "sp_pot_key": "F2",
+    "hp_percent": 40,
+    "sp_percent": 25,
+    "emergency_hp_percent": 20,
+    "emergency_sp_percent": 15,
+    "check_delay_ms": 50,
+    "emergency_delay_ms": 25,
+    "enabled": true,
+    "smart_mode": true,
+    "predictive_mode": true
+  },
+  "spammer": {
+    "enabled": true,
+    "keys": ["F3", "F4", "F5"],
+    "delay_ms": 1,
+    "burst_delay_ms": 1,
+    "skill_cancel": true,
+    "double_click": true,
+    "burst_mode": true,
+    "combo_mode": true,
+    "ultra_fast_mode": true
+  },
+  "performance": {
+    "target_fps": 60,
+    "adaptive_mode": true,
+    "memory_cache": true,
+    "input_optimization": true,
+    "background_refresh": true
+  },
+  "woe": {
+    "combat_mode": true,
+    "defense_mode": false,
+    "offense_mode": true,
+    "auto_buff": false,
+    "buff_delay_ms": 5000,
+    "enemy_detection": false,
+    "skill_rotation": false
+  },
+  "monitoring": {
+    "enabled": true,
+    "report_interval_seconds": 30,
+    "log_performance": true,
+    "show_stats": true
+  },
+  "ui": {
+    "show_debug": false,
+    "log_level": "info",
+    "show_performance": true,
+    "compact_mode": true
+  },
+  "skill_markers": {
+    "enabled": true,
+    "opacity": 0.7,
+    "size": 4.8,
+    "woe_optimized": true,
+    "show_enemy_only": false,
+    "show_allied_only": false,
+    "skills": {
+      "stone_wall": {
+        "color": "0x7F008888",
+        "enabled": true
+      },
+      "fire_wall": {
+        "color": "0x7F880000",
+        "enabled": true
+      },
+      "sanctuary": {
+        "color": "0x7F00FFFF",
+        "enabled": true
+      },
+      "safety_wall": {
+        "color": "0x7F880088",
+        "enabled": true
+      },
+      "fire_pillar": {
+        "color": "0x7F888800",
+        "enabled": true
+      },
+      "magnus_ex": {
+        "color": "0x7F00FFFF",
+        "enabled": true
+      },
+      "pneuma": {
+        "color": "0x7F00FFFF",
+        "enabled": true
+      },
+      "ice_wall": {
+        "color": "0x7F880088",
+        "enabled": true
+      },
+      "quagmire": {
+        "color": "0x7F448844",
+        "enabled": true
+      },
+      "warp_portal": {
+        "color": "0x7FFFFFFF",
+        "enabled": true
+      }
+    }
+  },
+  "range_display": {
+    "enabled": true,
+    "color": "0x7F00FF00",
+    "opacity": 0.7,
+    "thickness": 3.0,
+    "segments": 64,
+    "woe_optimized": true,
+    "show_only_in_combat": false
+  }
+}
