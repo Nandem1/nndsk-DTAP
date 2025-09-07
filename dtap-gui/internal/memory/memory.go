@@ -148,3 +148,36 @@ func (c *Client) DebugAddresses() {
 func (c *Client) GetStatusBufferAddress() (uintptr, error) {
 	return c.statusAddr, nil
 }
+
+// ReadString lee una cadena de texto desde memoria
+func (c *Client) ReadString(address uintptr, maxLength int) (string, error) {
+	data, err := c.ReadMemory(address, uintptr(maxLength))
+	if err != nil {
+		return "", err
+	}
+
+	// Encontrar el final de la cadena (null terminator)
+	for i, b := range data {
+		if b == 0 {
+			data = data[:i]
+			break
+		}
+	}
+
+	return string(data), nil
+}
+
+// ReadCharacterName lee el nombre del personaje
+func (c *Client) ReadCharacterName() (string, error) {
+	return c.ReadString(constants.CharacterNameAddress, 24) // Máximo 24 caracteres para nombre
+}
+
+// ReadMapName lee el nombre del mapa actual
+func (c *Client) ReadMapName() (string, error) {
+	return c.ReadString(constants.MapNameAddress, 32) // Máximo 32 caracteres para nombre de mapa
+}
+
+// ReadJobID lee el ID del job/clase del personaje
+func (c *Client) ReadJobID() (uint32, error) {
+	return c.ReadUint32(constants.JobIDAddress)
+}

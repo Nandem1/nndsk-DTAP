@@ -46,6 +46,9 @@ export default function App() {
     maxSp: 100,
     uptime: '00:00:00',
     totalActions: 0,
+    characterName: '',
+    mapName: '',
+    jobName: '',
     system: {
       MemoryUsage: 0,
       MemoryTotal: 0,
@@ -84,6 +87,9 @@ export default function App() {
             maxSp: statsData.max_sp || prev.maxSp,
             uptime: statsData.uptime || prev.uptime,
             totalActions: statsData.total_actions || prev.totalActions,
+            characterName: statsData.character_name || prev.characterName,
+            mapName: statsData.map_name || prev.mapName,
+            jobName: statsData.job_name || prev.jobName,
             system: statsData.system || prev.system
           }))
           setIsRunning(statsData.is_running || false)

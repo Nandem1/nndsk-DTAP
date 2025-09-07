@@ -3,9 +3,15 @@
 
 export function ConnectToRO():Promise<Record<string, any>>;
 
+export function DebugCharacterInfo():Promise<Record<string, any>>;
+
 export function GetConfig():Promise<Record<string, any>>;
 
 export function GetStats():Promise<Record<string, any>>;
+
+export function MonitorJobAddresses():Promise<Record<string, any>>;
+
+export function SearchJobIDInMemory():Promise<Record<string, any>>;
 
 export function StartServices():Promise<Record<string, any>>;
 

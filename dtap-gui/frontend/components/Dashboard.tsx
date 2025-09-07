@@ -11,7 +11,10 @@ import {
   Target,
   Activity,
   Wifi,
-  WifiOff
+  WifiOff,
+  User,
+  MapPin,
+  Sword
 } from 'lucide-react'
 
 interface DashboardProps {
@@ -27,6 +30,9 @@ interface DashboardProps {
     maxSp: number
     uptime: string
     totalActions: number
+    characterName?: string
+    mapName?: string
+    jobName?: string
   }
   message: string
   onConnect: () => void
@@ -115,6 +121,28 @@ export default function Dashboard({
             </div>
             
             <div className="space-y-6">
+              {/* Character Info */}
+              {stats.characterName && (
+                <div className="space-y-3 pb-4 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">{stats.characterName}</span>
+                  </div>
+                  {stats.jobName && (
+                    <div className="flex items-center gap-2">
+                      <Sword className="h-4 w-4 text-yellow-500" />
+                      <span className="text-xs text-muted-foreground">{stats.jobName}</span>
+                    </div>
+                  )}
+                  {stats.mapName && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-green-500" />
+                      <span className="text-xs text-muted-foreground">{stats.mapName}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* HP Bar */}
               <div>
                 <div className="flex justify-between text-xs text-muted-foreground mb-2">

@@ -6,12 +6,24 @@ export function ConnectToRO() {
   return window['go']['main']['App']['ConnectToRO']();
 }
 
+export function DebugCharacterInfo() {
+  return window['go']['main']['App']['DebugCharacterInfo']();
+}
+
 export function GetConfig() {
   return window['go']['main']['App']['GetConfig']();
 }
 
 export function GetStats() {
   return window['go']['main']['App']['GetStats']();
+}
+
+export function MonitorJobAddresses() {
+  return window['go']['main']['App']['MonitorJobAddresses']();
+}
+
+export function SearchJobIDInMemory() {
+  return window['go']['main']['App']['SearchJobIDInMemory']();
 }
 
 export function StartServices() {

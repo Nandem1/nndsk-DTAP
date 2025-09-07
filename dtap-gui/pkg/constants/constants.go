@@ -8,6 +8,11 @@ const (
 	SPBaseAddress    = 0x10DCE18 // SP Current
 	SPMaxAddress     = 0x10DCE1C // SP Maximum
 	StatusBufferAddr = 0x10DD284 // Status buffer (HP + 0x474)
+
+	// Character information addresses
+	CharacterNameAddress = 0x10df5d8 // Character name (from inspection)
+	MapNameAddress       = 0x10df5fa // Map name (from inspection, offset +34 from character name)
+	JobIDAddress         = 0x10df5e4 // Job ID (from debug, offset +12 from character name)
 )
 
 // Process names to search for
