@@ -19,16 +19,20 @@ type Config struct {
 	} `json:"autopot"`
 
 	AutoBuff struct {
-		Enabled bool `json:"enabled"`
-		Delay   int  `json:"delay_ms"`
+		Enabled  bool   `json:"enabled"`
+		Delay    int    `json:"delay_ms"`
+		GloomKey string `json:"gloom_key"`
+		AspdKey  string `json:"aspd_key"`
 	} `json:"autobuff"`
 
 	Spammer struct {
 		Enabled     bool     `json:"enabled"`
 		Keys        []string `json:"keys"`
-		Delay       int      `json:"delay_ms"`
+		Delay       float64  `json:"delay_ms"` // Cambiado a float64 para soportar decimales
 		SkillCancel bool     `json:"skill_cancel"`
 		DoubleClick bool     `json:"double_click"`
+		MouseClick  bool     `json:"mouse_click"`
+		Mode        string   `json:"mode"` // "simple", "adaptive", "ultra", "ultra_fast"
 	} `json:"spammer"`
 
 	UI struct {
@@ -56,24 +60,32 @@ func DefaultConfig() *Config {
 			Enabled:    true,
 		},
 		AutoBuff: struct {
-			Enabled bool `json:"enabled"`
-			Delay   int  `json:"delay_ms"`
+			Enabled  bool   `json:"enabled"`
+			Delay    int    `json:"delay_ms"`
+			GloomKey string `json:"gloom_key"`
+			AspdKey  string `json:"aspd_key"`
 		}{
-			Enabled: false,
-			Delay:   5000,
+			Enabled:  false,
+			Delay:    5000,
+			GloomKey: "F3",
+			AspdKey:  "F4",
 		},
 		Spammer: struct {
 			Enabled     bool     `json:"enabled"`
 			Keys        []string `json:"keys"`
-			Delay       int      `json:"delay_ms"`
+			Delay       float64  `json:"delay_ms"`
 			SkillCancel bool     `json:"skill_cancel"`
 			DoubleClick bool     `json:"double_click"`
+			MouseClick  bool     `json:"mouse_click"`
+			Mode        string   `json:"mode"`
 		}{
 			Enabled:     false,
 			Keys:        []string{},
-			Delay:       50,
+			Delay:       1.0, // Default to 1ms
 			SkillCancel: false,
 			DoubleClick: false,
+			MouseClick:  true,     // Enable mouse click by default
+			Mode:        "simple", // Default to simple mode
 		},
 		UI: struct {
 			ShowDebug bool   `json:"show_debug"`

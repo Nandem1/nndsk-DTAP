@@ -143,3 +143,8 @@ func (c *Client) DebugAddresses() {
 		}
 	}
 }
+
+// GetStatusBufferAddress retorna la dirección del status buffer
+func (c *Client) GetStatusBufferAddress() (uintptr, error) {
+	return c.statusAddr, nil
+}

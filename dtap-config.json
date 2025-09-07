@@ -1,22 +1,26 @@
 {
   "autopot": {
-    "hp_pot_key": "F1",
-    "sp_pot_key": "F2",
-    "hp_percent": 50,
+    "hp_pot_key": "F9",
+    "sp_pot_key": "F8",
+    "hp_percent": 99,
     "sp_percent": 30,
-    "check_delay_ms": 100,
+    "check_delay_ms": 1,
     "enabled": true
   },
   "autobuff": {
-    "enabled": false,
-    "delay_ms": 5000
+    "enabled": true,
+    "delay_ms": 1,
+    "gloom_key": "R",
+    "aspd_key": "W"
   },
   "spammer": {
     "enabled": true,
-    "keys": ["F4"],
-    "delay_ms": 1,
+    "keys": ["F1"],
+    "delay_ms": 0.1,
     "skill_cancel": true,
-    "double_click": true
+    "double_click": true,
+    "mouse_click": true,
+    "mode": "ultra_fast"
   },
   "ui": {
     "show_debug": false,

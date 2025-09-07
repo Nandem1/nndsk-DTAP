@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -10,9 +9,9 @@ import (
 	"unsafe"
 
 	"dtap-go/internal/memory"
-	"dtap-go/internal/normal/autopot"
-	"dtap-go/internal/normal/spammer"
+	"dtap-go/internal/monitoring"
 	"dtap-go/internal/process"
+	"dtap-go/internal/services"
 	"dtap-go/pkg/config"
 	"dtap-go/pkg/constants"
 	"dtap-go/pkg/logger"
@@ -73,9 +72,12 @@ func main() {
 
 	logger.Info("Conectado a la memoria del proceso")
 
-	// Inicializar servicios
-	spammerService := spammer.NewSpammerService(cfg, roHandle)
-	autopotService := autopot.NewAutoPotService(cfg, memClient, roHandle)
+	// Inicializar ServiceManager con mejores prácticas
+	serviceManager := services.NewServiceManager(cfg, memClient, roHandle)
+
+	// Inicializar monitoreo del sistema
+	systemMonitor := monitoring.NewSystemMonitor()
+	consoleDisplay := monitoring.NewConsoleDisplay(500 * time.Millisecond) // Actualizar cada 500ms
 
 	// Mostrar configuración
 	logger.Info("Configuración:")
@@ -102,13 +104,14 @@ func main() {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 
-	// Contexto para cancelar goroutines
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	// El ServiceManager maneja su propio contexto
 
-	// Iniciar servicios
-	spammerService.Start(ctx)
-	autopotService.Start(ctx)
+	// Iniciar ServiceManager
+	if err := serviceManager.Start(); err != nil {
+		logger.Error("Error iniciando ServiceManager: %v", err)
+		return
+	}
+	defer serviceManager.Stop()
 
 	// Loop principal - solo para mostrar estado
 	ticker := time.NewTicker(1 * time.Second) // Mostrar estado cada segundo
@@ -118,10 +121,10 @@ func main() {
 		select {
 		case <-interrupt:
 			logger.Info("Saliendo...")
-			cancel() // Cancelar todas las goroutines
+			// El ServiceManager se detiene automáticamente con defer
 			return
 		case <-ticker.C:
-			// Solo mostrar estado, el autopot está en su propio servicio
+			// Leer HP/SP
 			hp, maxHP, err := memClient.ReadHP()
 			if err != nil {
 				continue
@@ -136,9 +139,15 @@ func main() {
 			hpPercent := int((float64(hp) / float64(maxHP)) * 100)
 			spPercent := int((float64(sp) / float64(maxSP)) * 100)
 
-			// Mostrar estado
-			fmt.Printf("\rHP: %d/%d (%d%%) | SP: %d/%d (%d%%)",
-				hp, maxHP, hpPercent, sp, maxSP, spPercent)
+			// Obtener estadísticas del ServiceManager y sistema
+			serviceStats := serviceManager.GetStats()
+			systemStats := systemMonitor.GetSystemStats()
+
+			// Mostrar estadísticas optimizadas
+			consoleDisplay.DisplayStats(
+				hp, maxHP, hpPercent, sp, maxSP, spPercent,
+				serviceStats, systemStats,
+			)
 		}
 	}
 }
