@@ -94,7 +94,7 @@ export default function App() {
           }))
           setIsRunning(statsData.is_running || false)
         } catch (error) {
-          console.error('Error obteniendo estadísticas:', error)
+          // Error obteniendo estadísticas - silenciado
         }
       }
     }, 16) // ~60 FPS (1000ms / 60 = 16.67ms)
@@ -122,7 +122,7 @@ export default function App() {
         setSpammerKeys(config.spammer.keys || ['F5', 'F6', 'F7'])
       }
     } catch (error) {
-      console.error('Error cargando configuración:', error)
+      // Error cargando configuración - silenciado
     }
   }
 
@@ -175,8 +175,6 @@ export default function App() {
           enabled: spammerEnabled,
           keys: spammerKeys,
           delay: spammerDelay,
-          skill_cancel: false,
-          double_click: false,
           mouse_click: true,
           mode: "simple"
         },

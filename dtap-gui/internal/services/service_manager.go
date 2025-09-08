@@ -72,6 +72,12 @@ func (sm *ServiceManager) Start() error {
 
 	logger.Info("🚀 Iniciando ServiceManager con mejores prácticas")
 
+	// Recrear contexto si fue cancelado anteriormente
+	if sm.ctx.Err() != nil {
+		sm.ctx, sm.cancel = context.WithCancel(context.Background())
+		logger.Info("🔄 Recreando contexto para reanudar servicios")
+	}
+
 	// Inicializar servicios
 	sm.spammerService = spammer.NewUltraFastSpammer(sm.config, sm.windowHandle)
 	sm.autopotService = autopot.NewUltraFastAutoPot(sm.config, sm.memClient, sm.windowHandle)
@@ -133,7 +139,10 @@ func (sm *ServiceManager) Stop() error {
 		logger.Warn("⚠️ Timeout esperando que los servicios terminen")
 	}
 
+	// Resetear estado para permitir reinicio
 	sm.started = false
+	sm.wg = sync.WaitGroup{} // Resetear WaitGroup para permitir reinicio
+
 	return nil
 }
 

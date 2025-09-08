@@ -10,6 +10,7 @@ const (
 	StatusBufferAddr = 0x10DD284 // Status buffer (HP + 0x474)
 
 	// Character information addresses
+	CharacterBaseAddress = 0x10df5d8 // Character base address (from inspection)
 	CharacterNameAddress = 0x10df5d8 // Character name (from inspection)
 	MapNameAddress       = 0x10df5fa // Map name (from inspection, offset +34 from character name)
 	JobIDAddress         = 0x10df5e4 // Job ID (from debug, offset +12 from character name)

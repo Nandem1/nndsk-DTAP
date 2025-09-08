@@ -99,10 +99,20 @@ func main() {
 	}
 
 	logger.Info("Presiona Ctrl+C para salir...")
+	logger.Info("Comandos disponibles:")
+	logger.Info("- 'aspd' - Buscar ASPD en memoria")
+	logger.Info("- 'monitor' - Monitorear direcciones ASPD")
+	logger.Info("- 'debug' - Debug detallado de ASPD")
+	logger.Info("- 'stats' - Mostrar estadísticas")
+	logger.Info("- 'quit' - Salir")
 
 	// Canal para manejar interrupciones
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
+
+	// Canal para comandos de usuario
+	commandChan := make(chan string, 1)
+	go handleUserCommands(commandChan)
 
 	// El ServiceManager maneja su propio contexto
 
@@ -123,6 +133,8 @@ func main() {
 			logger.Info("Saliendo...")
 			// El ServiceManager se detiene automáticamente con defer
 			return
+		case command := <-commandChan:
+			handleCommand(command, memClient, serviceManager, systemMonitor)
 		case <-ticker.C:
 			// Leer HP/SP
 			hp, maxHP, err := memClient.ReadHP()
@@ -175,4 +187,211 @@ func getWindowHandle(pid uint32) (windows.Handle, error) {
 	}
 
 	return hwnd, nil
+}
+
+// handleUserCommands maneja los comandos de entrada del usuario
+func handleUserCommands(commandChan chan<- string) {
+	for {
+		var input string
+		fmt.Scanln(&input)
+		commandChan <- input
+	}
+}
+
+// handleCommand procesa los comandos del usuario
+func handleCommand(command string, memClient *memory.Client, serviceManager *services.ServiceManager, systemMonitor *monitoring.SystemMonitor) {
+	switch command {
+	case "aspd":
+		searchASPDInMemory(memClient)
+	case "monitor":
+		monitorASPDAddresses(memClient)
+	case "debug":
+		debugASPDInfo(memClient)
+	case "stats":
+		showDetailedStats(memClient, serviceManager, systemMonitor)
+	case "quit":
+		logger.Info("Saliendo...")
+		os.Exit(0)
+	default:
+		logger.Info("Comando no reconocido: %s", command)
+		logger.Info("Comandos disponibles: aspd, monitor, debug, stats, quit")
+	}
+}
+
+// searchASPDInMemory busca el ASPD en toda la memoria del proceso
+func searchASPDInMemory(memClient *memory.Client) {
+	logger.Info("🔍 Buscando ASPD (158) en memoria...")
+
+	targetASPD := uint32(158)
+	searchResults := make(map[string]interface{})
+
+	// Rango 1: Alrededor de la dirección del personaje
+	baseAddr := uintptr(0x10df5d8)
+	logger.Info("Buscando cerca del personaje (0x%x)...", baseAddr)
+
+	for i := -100; i <= 300; i++ {
+		addr := baseAddr + uintptr(i*4)
+		value, err := memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("near_character_0x%x", addr)] = map[string]interface{}{
+				"address":          fmt.Sprintf("0x%x", addr),
+				"value":            value,
+				"aspd":             value,
+				"offset_from_base": i * 4,
+			}
+			logger.Info("✅ Encontrado ASPD en: 0x%x (offset: %d)", addr, i*4)
+		}
+	}
+
+	// Rango 2: Alrededor de las direcciones de HP/SP
+	hpAddr := uintptr(0x10DCE10)
+	logger.Info("Buscando cerca de HP/SP (0x%x)...", hpAddr)
+
+	for i := -200; i <= 200; i++ {
+		addr := hpAddr + uintptr(i*4)
+		value, err := memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("near_hp_0x%x", addr)] = map[string]interface{}{
+				"address":        fmt.Sprintf("0x%x", addr),
+				"value":          value,
+				"aspd":           value,
+				"offset_from_hp": i * 4,
+			}
+			logger.Info("✅ Encontrado ASPD en: 0x%x (offset desde HP: %d)", addr, i*4)
+		}
+	}
+
+	// Rango 3: Búsqueda en heap
+	logger.Info("Buscando en heap...")
+	heapFound := 0
+	for i := 0; i < 2000; i++ {
+		addr := uintptr(0x10000000 + uintptr(i*4))
+		value, err := memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("heap_0x%x", addr)] = map[string]interface{}{
+				"address":     fmt.Sprintf("0x%x", addr),
+				"value":       value,
+				"aspd":        value,
+				"heap_offset": i * 4,
+			}
+			heapFound++
+			if heapFound <= 5 { // Mostrar solo los primeros 5
+				logger.Info("✅ Encontrado ASPD en heap: 0x%x", addr)
+			}
+		}
+	}
+	if heapFound > 5 {
+		logger.Info("... y %d más en heap", heapFound-5)
+	}
+
+	logger.Info("🎯 Búsqueda completada. Total encontrados: %d", len(searchResults))
+}
+
+// monitorASPDAddresses monitorea direcciones específicas de ASPD
+func monitorASPDAddresses(memClient *memory.Client) {
+	logger.Info("📊 Monitoreando direcciones ASPD...")
+
+	addresses := []uintptr{
+		0x10df5d8 + 0x10, // Cerca del personaje + offset
+		0x10df5d8 + 0x20, // Cerca del personaje + offset
+		0x10df5d8 + 0x30, // Cerca del personaje + offset
+		0x10DCE10 + 0x50, // Cerca de HP + offset
+		0x10DCE10 + 0x60, // Cerca de HP + offset
+		0x10DCE10 + 0x70, // Cerca de HP + offset
+	}
+
+	for i, addr := range addresses {
+		value, err := memClient.ReadUint32(addr)
+		if err == nil {
+			isASPD := value == 158
+			status := "❌"
+			if isASPD {
+				status = "✅"
+			}
+			logger.Info("%s Addr %d: 0x%x = %d (0x%X) %s",
+				status, i+1, addr, value, value,
+				map[bool]string{true: "[ES ASPD!]", false: ""}[isASPD])
+		} else {
+			logger.Info("❌ Addr %d: 0x%x = ERROR", i+1, addr)
+		}
+	}
+}
+
+// debugASPDInfo muestra información detallada de debug
+func debugASPDInfo(memClient *memory.Client) {
+	logger.Info("🔧 Debug detallado de ASPD...")
+
+	// Leer alrededor del personaje
+	baseAddr := uintptr(0x10df5d8)
+	logger.Info("=== OFFSETS DEL PERSONAJE ===")
+
+	for i := 0; i < 20; i++ {
+		offset := i * 4
+		addr := baseAddr + uintptr(offset)
+		value, err := memClient.ReadUint32(addr)
+		if err == nil {
+			isASPD := value == 158
+			status := ""
+			if isASPD {
+				status = " ← ¡ASPD!"
+			}
+			logger.Info("Offset %2d: 0x%x = %4d (0x%X)%s",
+				offset, addr, value, value, status)
+		}
+	}
+
+	// Leer alrededor de HP/SP
+	hpAddr := uintptr(0x10DCE10)
+	logger.Info("=== OFFSETS DE HP/SP ===")
+
+	for i := 0; i < 15; i++ {
+		offset := i * 4
+		addr := hpAddr + uintptr(offset)
+		value, err := memClient.ReadUint32(addr)
+		if err == nil {
+			isASPD := value == 158
+			status := ""
+			if isASPD {
+				status = " ← ¡ASPD!"
+			}
+			logger.Info("HP+%2d: 0x%x = %4d (0x%X)%s",
+				offset, addr, value, value, status)
+		}
+	}
+}
+
+// showDetailedStats muestra estadísticas detalladas
+func showDetailedStats(memClient *memory.Client, serviceManager *services.ServiceManager, systemMonitor *monitoring.SystemMonitor) {
+	logger.Info("📈 Estadísticas detalladas:")
+
+	// HP/SP
+	hp, maxHP, err := memClient.ReadHP()
+	if err == nil {
+		hpPercent := int((float64(hp) / float64(maxHP)) * 100)
+		logger.Info("HP: %d/%d (%d%%)", hp, maxHP, hpPercent)
+	}
+
+	sp, maxSP, err := memClient.ReadSP()
+	if err == nil {
+		spPercent := int((float64(sp) / float64(maxSP)) * 100)
+		logger.Info("SP: %d/%d (%d%%)", sp, maxSP, spPercent)
+	}
+
+	// Job
+	jobID, err := memClient.ReadJobID()
+	if err == nil {
+		logger.Info("Job ID: %d", jobID)
+	}
+
+	// ASPD
+	aspd, err := memClient.ReadASPD()
+	if err == nil {
+		logger.Info("ASPD: %d", aspd)
+	} else {
+		logger.Info("ASPD: Error leyendo")
+	}
+
+	// Stats del servicio
+	serviceStats := serviceManager.GetStats()
+	logger.Info("Servicios: %v", serviceStats)
 }

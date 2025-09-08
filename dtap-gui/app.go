@@ -46,13 +46,14 @@ func (a *App) startup(ctx context.Context) {
 	// Configurar logger
 	logger.Global.SetLevel(logger.INFO)
 
-	// Cargar configuración
+	// Cargar configuración desde archivo JSON
 	cfg, err := config.LoadConfig(config.GetConfigPath())
 	if err != nil {
 		logger.Error("Error cargando configuración: %v", err)
 		return
 	}
 	a.config = cfg
+	logger.Info("Configuración cargada desde JSON: %s", config.GetConfigPath())
 
 	// Inicializar monitoreo del sistema
 	a.systemMonitor = monitoring.NewSystemMonitor()
@@ -362,6 +363,12 @@ func (a *App) GetStats() map[string]interface{} {
 			stats["job_id"] = jobID
 			stats["job_name"] = getJobName(jobID)
 		}
+
+		// Leer ASPD si está disponible
+		aspd, err := a.memClient.ReadASPD()
+		if err == nil {
+			stats["aspd"] = aspd
+		}
 	}
 
 	if a.serviceManager != nil {
@@ -408,13 +415,11 @@ func (a *App) GetConfig() map[string]interface{} {
 			"aspd_key":  a.config.AutoBuff.AspdKey,
 		},
 		"spammer": map[string]interface{}{
-			"enabled":      a.config.Spammer.Enabled,
-			"keys":         a.config.Spammer.Keys,
-			"delay":        a.config.Spammer.Delay,
-			"skill_cancel": a.config.Spammer.SkillCancel,
-			"double_click": a.config.Spammer.DoubleClick,
-			"mouse_click":  a.config.Spammer.MouseClick,
-			"mode":         a.config.Spammer.Mode,
+			"enabled":     a.config.Spammer.Enabled,
+			"keys":        a.config.Spammer.Keys,
+			"delay":       a.config.Spammer.Delay,
+			"mouse_click": a.config.Spammer.MouseClick,
+			"mode":        a.config.Spammer.Mode,
 		},
 		"ui": map[string]interface{}{
 			"show_debug": a.config.UI.ShowDebug,
@@ -425,7 +430,7 @@ func (a *App) GetConfig() map[string]interface{} {
 	return configData
 }
 
-// UpdateConfig updates the configuration
+// UpdateConfig updates the configuration and saves it to JSON file
 func (a *App) UpdateConfig(configJSON string) map[string]interface{} {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -441,7 +446,14 @@ func (a *App) UpdateConfig(configJSON string) map[string]interface{} {
 		return result
 	}
 
-	// Actualizar configuración en memoria (sin guardar JSON)
+	// Guardar configuración en archivo JSON
+	configPath := config.GetConfigPath()
+	if err := newConfig.SaveConfig(configPath); err != nil {
+		result["message"] = fmt.Sprintf("Error guardando configuración: %v", err)
+		return result
+	}
+
+	// Actualizar configuración en memoria
 	a.config = &newConfig
 
 	// Actualizar configuración en ServiceManager si está ejecutándose
@@ -450,7 +462,219 @@ func (a *App) UpdateConfig(configJSON string) map[string]interface{} {
 	}
 
 	result["success"] = true
-	result["message"] = "Configuración actualizada correctamente"
+	result["message"] = "Configuración guardada correctamente en JSON"
+
+	return result
+}
+
+// ReloadConfig reloads configuration from JSON file
+func (a *App) ReloadConfig() map[string]interface{} {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	result := map[string]interface{}{
+		"success": false,
+		"message": "",
+	}
+
+	// Recargar configuración desde archivo JSON
+	cfg, err := config.LoadConfig(config.GetConfigPath())
+	if err != nil {
+		result["message"] = fmt.Sprintf("Error recargando configuración: %v", err)
+		return result
+	}
+
+	// Actualizar configuración en memoria
+	a.config = cfg
+
+	// Actualizar configuración en ServiceManager si está ejecutándose
+	if a.serviceManager != nil {
+		a.serviceManager.UpdateConfig(cfg)
+	}
+
+	result["success"] = true
+	result["message"] = "Configuración recargada desde JSON"
+
+	return result
+}
+
+// SearchASPDInMemory - Busca el ASPD en toda la memoria del proceso
+func (a *App) SearchASPDInMemory() map[string]interface{} {
+	result := map[string]interface{}{
+		"success": false,
+		"message": "",
+		"data":    nil,
+	}
+
+	if a.memClient == nil {
+		result["message"] = "No hay conexión con la memoria"
+		return result
+	}
+
+	// ASPD objetivo: 158 (en diferentes formatos)
+	targetASPD := uint32(158)
+	searchResults := make(map[string]interface{})
+
+	// Rango 1: Alrededor de la dirección del personaje (más probable)
+	baseAddr := uintptr(0x10df5d8)
+	for i := -100; i <= 300; i++ {
+		addr := baseAddr + uintptr(i*4)
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("near_character_0x%x", addr)] = map[string]interface{}{
+				"address":          fmt.Sprintf("0x%x", addr),
+				"value":            value,
+				"aspd":             value,
+				"offset_from_base": i * 4,
+			}
+		}
+	}
+
+	// Rango 2: Alrededor de las direcciones de HP/SP
+	hpAddr := uintptr(0x10DCE10)
+	for i := -200; i <= 200; i++ {
+		addr := hpAddr + uintptr(i*4)
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("near_hp_0x%x", addr)] = map[string]interface{}{
+				"address":        fmt.Sprintf("0x%x", addr),
+				"value":          value,
+				"aspd":           value,
+				"offset_from_hp": i * 4,
+			}
+		}
+	}
+
+	// Rango 3: Búsqueda más amplia en el heap
+	for i := 0; i < 2000; i++ {
+		addr := uintptr(0x10000000 + uintptr(i*4)) // Rango del heap
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("heap_0x%x", addr)] = map[string]interface{}{
+				"address":     fmt.Sprintf("0x%x", addr),
+				"value":       value,
+				"aspd":        value,
+				"heap_offset": i * 4,
+			}
+		}
+	}
+
+	// Rango 4: Búsqueda en stack
+	for i := 0; i < 1000; i++ {
+		addr := uintptr(0x20000000 + uintptr(i*4)) // Rango del stack
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil && value == targetASPD {
+			searchResults[fmt.Sprintf("stack_0x%x", addr)] = map[string]interface{}{
+				"address":      fmt.Sprintf("0x%x", addr),
+				"value":        value,
+				"aspd":         value,
+				"stack_offset": i * 4,
+			}
+		}
+	}
+
+	result["success"] = true
+	result["message"] = fmt.Sprintf("Búsqueda de ASPD completada. ASPD objetivo: %d", targetASPD)
+	result["data"] = searchResults
+
+	return result
+}
+
+// MonitorASPDAddresses - Monitorea las direcciones específicas de ASPD encontradas
+func (a *App) MonitorASPDAddresses() map[string]interface{} {
+	result := map[string]interface{}{"success": false, "message": "", "data": nil}
+	if a.memClient == nil {
+		result["message"] = "No hay conexión con la memoria"
+		return result
+	}
+
+	// Direcciones comunes donde puede estar el ASPD (basado en patrones típicos)
+	addresses := []uintptr{
+		0x10df5d8 + 0x10, // Cerca del personaje + offset
+		0x10df5d8 + 0x20, // Cerca del personaje + offset
+		0x10df5d8 + 0x30, // Cerca del personaje + offset
+		0x10DCE10 + 0x50, // Cerca de HP + offset
+		0x10DCE10 + 0x60, // Cerca de HP + offset
+		0x10DCE10 + 0x70, // Cerca de HP + offset
+	}
+
+	monitorResults := make(map[string]interface{})
+
+	for i, addr := range addresses {
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil {
+			monitorResults[fmt.Sprintf("addr_%d_0x%x", i+1, addr)] = map[string]interface{}{
+				"address":   fmt.Sprintf("0x%x", addr),
+				"value":     value,
+				"hex_value": fmt.Sprintf("0x%X", value),
+				"aspd":      value,
+				"is_aspd":   value == 158, // Marcar si es el ASPD esperado
+			}
+		} else {
+			monitorResults[fmt.Sprintf("addr_%d_0x%x", i+1, addr)] = map[string]interface{}{
+				"address": fmt.Sprintf("0x%x", addr),
+				"error":   "No se pudo leer",
+			}
+		}
+	}
+
+	result["success"] = true
+	result["message"] = "Monitoreo de direcciones ASPD completado"
+	result["data"] = monitorResults
+	return result
+}
+
+// DebugASPDInfo - Función para debuggear información del ASPD
+func (a *App) DebugASPDInfo() map[string]interface{} {
+	result := map[string]interface{}{
+		"success": false,
+		"message": "",
+		"data":    nil,
+	}
+
+	if a.memClient == nil {
+		result["message"] = "No hay conexión con la memoria"
+		return result
+	}
+
+	// Leer diferentes offsets alrededor de la dirección del personaje
+	baseAddr := uintptr(0x10df5d8)
+	debugData := make(map[string]interface{})
+
+	// Leer en diferentes offsets para encontrar el ASPD
+	for i := 0; i < 50; i++ {
+		offset := i * 4 // Cada offset de 4 bytes
+		addr := baseAddr + uintptr(offset)
+
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil {
+			debugData[fmt.Sprintf("offset_%d_0x%x", offset, addr)] = map[string]interface{}{
+				"value": value,
+				"aspd":  value,
+				"hex":   fmt.Sprintf("0x%X", value),
+			}
+		}
+	}
+
+	// También leer alrededor de HP/SP
+	hpAddr := uintptr(0x10DCE10)
+	for i := 0; i < 30; i++ {
+		offset := i * 4
+		addr := hpAddr + uintptr(offset)
+
+		value, err := a.memClient.ReadUint32(addr)
+		if err == nil {
+			debugData[fmt.Sprintf("hp_offset_%d_0x%x", offset, addr)] = map[string]interface{}{
+				"value": value,
+				"aspd":  value,
+				"hex":   fmt.Sprintf("0x%X", value),
+			}
+		}
+	}
+
+	result["success"] = true
+	result["message"] = "Debug info ASPD obtenida"
+	result["data"] = debugData
 
 	return result
 }

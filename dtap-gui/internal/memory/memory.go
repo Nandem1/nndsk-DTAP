@@ -181,3 +181,11 @@ func (c *Client) ReadMapName() (string, error) {
 func (c *Client) ReadJobID() (uint32, error) {
 	return c.ReadUint32(constants.JobIDAddress)
 }
+
+// ReadASPD lee la velocidad de ataque (ASPD) del personaje
+func (c *Client) ReadASPD() (uint32, error) {
+	// Por ahora, intentar leer desde una dirección común
+	// Esta dirección se puede ajustar basado en los resultados de la búsqueda
+	aspdAddr := uintptr(constants.CharacterBaseAddress + 0x20) // Offset común para ASPD
+	return c.ReadUint32(aspdAddr)
+}

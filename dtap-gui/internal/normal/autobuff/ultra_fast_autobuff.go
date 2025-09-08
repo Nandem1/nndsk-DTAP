@@ -55,6 +55,12 @@ type UltraFastAutoBuff struct {
 	// Timing control
 	lastGloomUse time.Time
 	lastAspdUse  time.Time
+
+	// Smart speed control for missing consumables
+	lastSuccessfulBuff  time.Time
+	consecutiveFailures int
+	slowMode            bool
+	slowModeDelay       time.Duration
 }
 
 // NewUltraFastAutoBuff crea el autobuff más rápido posible
@@ -66,18 +72,22 @@ func NewUltraFastAutoBuff(cfg *config.Config, memClient *memory.Client, windowHa
 	aspdKeyCode := getKeyCodeUltraFast(cfg.AutoBuff.AspdKey)
 
 	return &UltraFastAutoBuff{
-		config:       cfg,
-		memClient:    memClient,
-		windowHandle: windowHandle,
-		user32:       user32,
-		postMessage:  user32.NewProc("PostMessageW"),
-		gloomKeyCode: gloomKeyCode,
-		aspdKeyCode:  aspdKeyCode,
-		lastLogTime:  time.Now(),
-		lastBuffTime: time.Now(),
-		statusBuffer: make([]uint32, 100), // Buffer de 100 elementos
-		lastGloomUse: time.Now(),
-		lastAspdUse:  time.Now(),
+		config:              cfg,
+		memClient:           memClient,
+		windowHandle:        windowHandle,
+		user32:              user32,
+		postMessage:         user32.NewProc("PostMessageW"),
+		gloomKeyCode:        gloomKeyCode,
+		aspdKeyCode:         aspdKeyCode,
+		lastLogTime:         time.Now(),
+		lastBuffTime:        time.Now(),
+		statusBuffer:        make([]uint32, 100), // Buffer de 100 elementos
+		lastGloomUse:        time.Now(),
+		lastAspdUse:         time.Now(),
+		lastSuccessfulBuff:  time.Now(),
+		consecutiveFailures: 0,
+		slowMode:            false,
+		slowModeDelay:       3 * time.Second, // 3 segundos de delay en modo lento
 	}
 }
 
@@ -113,9 +123,17 @@ func (s *UltraFastAutoBuff) runUltraFastLoop(ctx context.Context) {
 			//	s.lastLogTime = now
 			// }
 
-			// Delay mínimo para evitar saturar el juego
-			// 9µs para alta estabilidad (mismo que spammer y autopot)
-			time.Sleep(9 * time.Microsecond)
+			// Sistema inteligente de velocidad
+			s.adjustSpeedBasedOnSuccess()
+
+			// Delay dinámico basado en el modo
+			if s.slowMode {
+				time.Sleep(s.slowModeDelay)
+			} else {
+				// Delay mínimo para evitar saturar el juego
+				// 9µs para alta estabilidad (mismo que spammer y autopot)
+				time.Sleep(9 * time.Microsecond)
+			}
 		}
 	}
 }
@@ -187,6 +205,8 @@ func (s *UltraFastAutoBuff) analyzeBuffs() {
 
 // useBuffsIfNeeded - Usa buffs si es necesario
 func (s *UltraFastAutoBuff) useBuffsIfNeeded(now time.Time) {
+	buffUsed := false
+
 	// Usar Gloom si no está activo y no hay Quagmire
 	if !s.foundGloom && !s.foundQuagmire {
 		// Verificar delay mínimo entre usos - ultra rápido (1ms)
@@ -195,6 +215,7 @@ func (s *UltraFastAutoBuff) useBuffsIfNeeded(now time.Time) {
 			s.buffsUsed++
 			s.lastGloomUse = now
 			s.lastBuffTime = now
+			buffUsed = true
 		}
 	}
 
@@ -206,7 +227,35 @@ func (s *UltraFastAutoBuff) useBuffsIfNeeded(now time.Time) {
 			s.buffsUsed++
 			s.lastAspdUse = now
 			s.lastBuffTime = now
+			buffUsed = true
 		}
+	}
+
+	// Detectar si se usó un buff exitosamente
+	if buffUsed {
+		s.lastSuccessfulBuff = now
+		s.consecutiveFailures = 0
+	} else if !s.foundGloom || !s.foundAspd {
+		// Si necesitamos buffs pero no los tenemos, incrementar fallos
+		s.consecutiveFailures++
+	}
+}
+
+// adjustSpeedBasedOnSuccess - Ajusta la velocidad basado en el éxito de los buffs
+func (s *UltraFastAutoBuff) adjustSpeedBasedOnSuccess() {
+	now := time.Now()
+
+	// Si han pasado más de 3 segundos sin buffs exitosos, activar modo lento
+	if now.Sub(s.lastSuccessfulBuff) > 3*time.Second && !s.slowMode {
+		s.slowMode = true
+		logger.Info("🔄 AutoBuff: Sin consumibles detectado, activando modo lento (3s delay)")
+	}
+
+	// Si tenemos buffs activos, volver al modo rápido
+	if s.foundGloom && s.foundAspd && s.slowMode {
+		s.slowMode = false
+		s.consecutiveFailures = 0
+		logger.Info("⚡ AutoBuff: Consumibles disponibles, volviendo a modo ultra rápido")
 	}
 }
 

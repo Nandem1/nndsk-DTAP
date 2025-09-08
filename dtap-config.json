@@ -10,17 +10,15 @@
   "autobuff": {
     "enabled": true,
     "delay_ms": 1,
-    "gloom_key": "R",
+    "gloom_key": "",
     "aspd_key": "W"
   },
   "spammer": {
     "enabled": true,
-    "keys": ["F1"],
+    "keys": ["F1", "F2"],
     "delay_ms": 0.1,
-    "skill_cancel": true,
-    "double_click": true,
     "mouse_click": true,
-    "mode": "ultra_fast"
+    "mode": "simple"
   },
   "ui": {
     "show_debug": false,

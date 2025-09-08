@@ -3,13 +3,21 @@
 
 export function ConnectToRO():Promise<Record<string, any>>;
 
+export function DebugASPDInfo():Promise<Record<string, any>>;
+
 export function DebugCharacterInfo():Promise<Record<string, any>>;
 
 export function GetConfig():Promise<Record<string, any>>;
 
 export function GetStats():Promise<Record<string, any>>;
 
+export function MonitorASPDAddresses():Promise<Record<string, any>>;
+
 export function MonitorJobAddresses():Promise<Record<string, any>>;
+
+export function ReloadConfig():Promise<Record<string, any>>;
+
+export function SearchASPDInMemory():Promise<Record<string, any>>;
 
 export function SearchJobIDInMemory():Promise<Record<string, any>>;
 

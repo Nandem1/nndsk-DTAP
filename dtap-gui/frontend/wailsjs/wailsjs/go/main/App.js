@@ -6,6 +6,10 @@ export function ConnectToRO() {
   return window['go']['main']['App']['ConnectToRO']();
 }
 
+export function DebugASPDInfo() {
+  return window['go']['main']['App']['DebugASPDInfo']();
+}
+
 export function DebugCharacterInfo() {
   return window['go']['main']['App']['DebugCharacterInfo']();
 }
@@ -18,8 +22,20 @@ export function GetStats() {
   return window['go']['main']['App']['GetStats']();
 }
 
+export function MonitorASPDAddresses() {
+  return window['go']['main']['App']['MonitorASPDAddresses']();
+}
+
 export function MonitorJobAddresses() {
   return window['go']['main']['App']['MonitorJobAddresses']();
+}
+
+export function ReloadConfig() {
+  return window['go']['main']['App']['ReloadConfig']();
+}
+
+export function SearchASPDInMemory() {
+  return window['go']['main']['App']['SearchASPDInMemory']();
 }
 
 export function SearchJobIDInMemory() {

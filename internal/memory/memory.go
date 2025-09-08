@@ -148,3 +148,40 @@ func (c *Client) DebugAddresses() {
 func (c *Client) GetStatusBufferAddress() (uintptr, error) {
 	return c.statusAddr, nil
 }
+
+// ReadJobID lee el ID del job/clase del personaje
+func (c *Client) ReadJobID() (uint32, error) {
+	return c.ReadUint32(constants.JobIDAddress)
+}
+
+// ReadASPD lee la velocidad de ataque (ASPD) del personaje
+func (c *Client) ReadASPD() (uint32, error) {
+	// Por ahora, intentar leer desde una dirección común
+	// Esta dirección se puede ajustar basado en los resultados de la búsqueda
+	aspdAddr := uintptr(constants.CharacterBaseAddress + 0x20) // Offset común para ASPD
+	return c.ReadUint32(aspdAddr)
+}
+
+// ReadBytes lee un número específico de bytes desde una dirección
+func (c *Client) ReadBytes(addr uintptr, size int) ([]byte, error) {
+	buffer := make([]byte, size)
+	var bytesRead uintptr
+
+	err := windows.ReadProcessMemory(
+		c.processHandle,
+		addr,
+		&buffer[0],
+		uintptr(size),
+		&bytesRead,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if bytesRead != uintptr(size) {
+		return buffer[:bytesRead], nil
+	}
+
+	return buffer, nil
+}

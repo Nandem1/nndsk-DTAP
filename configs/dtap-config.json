@@ -15,8 +15,8 @@
     "enabled": true,
     "keys": ["F1", "F2", "F3"],
     "delay_ms": 1,
-    "skill_cancel": true,
-    "double_click": true
+    "mouse_click": true,
+    "mode": "simple"
   },
   "ui": {
     "show_debug": false,

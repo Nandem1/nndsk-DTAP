@@ -26,13 +26,11 @@ type Config struct {
 	} `json:"autobuff"`
 
 	Spammer struct {
-		Enabled     bool     `json:"enabled"`
-		Keys        []string `json:"keys"`
-		Delay       float64  `json:"delay_ms"` // Cambiado a float64 para soportar decimales
-		SkillCancel bool     `json:"skill_cancel"`
-		DoubleClick bool     `json:"double_click"`
-		MouseClick  bool     `json:"mouse_click"`
-		Mode        string   `json:"mode"` // "simple", "adaptive", "ultra", "ultra_fast"
+		Enabled    bool     `json:"enabled"`
+		Keys       []string `json:"keys"`
+		Delay      float64  `json:"delay_ms"` // Cambiado a float64 para soportar decimales
+		MouseClick bool     `json:"mouse_click"`
+		Mode       string   `json:"mode"` // "simple", "adaptive", "ultra", "ultra_fast"
 	} `json:"spammer"`
 
 	UI struct {
@@ -71,21 +69,17 @@ func DefaultConfig() *Config {
 			AspdKey:  "F4",
 		},
 		Spammer: struct {
-			Enabled     bool     `json:"enabled"`
-			Keys        []string `json:"keys"`
-			Delay       float64  `json:"delay_ms"`
-			SkillCancel bool     `json:"skill_cancel"`
-			DoubleClick bool     `json:"double_click"`
-			MouseClick  bool     `json:"mouse_click"`
-			Mode        string   `json:"mode"`
+			Enabled    bool     `json:"enabled"`
+			Keys       []string `json:"keys"`
+			Delay      float64  `json:"delay_ms"`
+			MouseClick bool     `json:"mouse_click"`
+			Mode       string   `json:"mode"`
 		}{
-			Enabled:     false,
-			Keys:        []string{},
-			Delay:       1.0, // Default to 1ms
-			SkillCancel: false,
-			DoubleClick: false,
-			MouseClick:  true,     // Enable mouse click by default
-			Mode:        "simple", // Default to simple mode
+			Enabled:    false,
+			Keys:       []string{},
+			Delay:      1.0,      // Default to 1ms
+			MouseClick: true,     // Enable mouse click by default
+			Mode:       "simple", // Default to simple mode
 		},
 		UI: struct {
 			ShowDebug bool   `json:"show_debug"`
