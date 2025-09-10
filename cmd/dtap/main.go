@@ -9,9 +9,11 @@ import (
 	"unsafe"
 
 	"dtap-go/internal/memory"
+	"dtap-go/internal/metrics"
 	"dtap-go/internal/monitoring"
 	"dtap-go/internal/process"
 	"dtap-go/internal/services"
+	"dtap-go/internal/timing"
 	"dtap-go/pkg/config"
 	"dtap-go/pkg/constants"
 	"dtap-go/pkg/logger"
@@ -29,6 +31,25 @@ func main() {
 
 	// Configurar logger
 	logger.Global.SetLevel(logger.ParseLogLevel(cfg.UI.LogLevel))
+
+	// Inicializar métricas si están habilitadas
+	if cfg.Metrics.Enabled {
+		metricsInstance := metrics.GetMetrics()
+		if err := metricsInstance.Enable(cfg.Metrics.Port); err != nil {
+			logger.Error("Error habilitando métricas: %v", err)
+		}
+	}
+
+	// Inicializar timing optimizer si está habilitado
+	if cfg.Timing.Enabled {
+		timingOptimizer := timing.GetOptimizer()
+		if err := timingOptimizer.Enable(); err != nil {
+			logger.Error("Error habilitando timing optimizer: %v", err)
+		} else {
+			// Asegurar que se desactive al finalizar
+			defer timingOptimizer.AutoDisable()
+		}
+	}
 
 	// Mostrar información de la aplicación
 	logger.Info("%s v%s - Versión Normal", constants.AppName, constants.AppVersion)
@@ -86,7 +107,7 @@ func main() {
 	logger.Info("- Delay: %dms", cfg.AutoPot.CheckDelay)
 
 	if cfg.Spammer.Enabled {
-		logger.Info("- Spammer: HABILITADO (%d teclas + click izquierdo, %dms delay)", len(cfg.Spammer.Keys), cfg.Spammer.Delay)
+		logger.Info("- Spammer: HABILITADO (%d teclas + click izquierdo, %.1fms delay)", len(cfg.Spammer.Keys), cfg.Spammer.Delay)
 		logger.Info("- Teclas spammer: %v", cfg.Spammer.Keys)
 		if cfg.Spammer.SkillCancel {
 			logger.Info("- Skill Cancel: HABILITADO (cancela habilidades)")
@@ -104,6 +125,10 @@ func main() {
 	logger.Info("- 'monitor' - Monitorear direcciones ASPD")
 	logger.Info("- 'debug' - Debug detallado de ASPD")
 	logger.Info("- 'stats' - Mostrar estadísticas")
+	logger.Info("- 'metrics' - Habilitar/deshabilitar métricas")
+	logger.Info("- 'timing' - Habilitar/deshabilitar optimización de timing")
+	logger.Info("- 'benchmark' - Benchmark de precisión de timing")
+	logger.Info("- 'predictor' - Mostrar estadísticas del predictor")
 	logger.Info("- 'quit' - Salir")
 
 	// Canal para manejar interrupciones
@@ -209,12 +234,20 @@ func handleCommand(command string, memClient *memory.Client, serviceManager *ser
 		debugASPDInfo(memClient)
 	case "stats":
 		showDetailedStats(memClient, serviceManager, systemMonitor)
+	case "metrics":
+		toggleMetrics()
+	case "timing":
+		toggleTiming()
+	case "benchmark":
+		runTimingBenchmark()
+	case "predictor":
+		showPredictorStats(serviceManager)
 	case "quit":
 		logger.Info("Saliendo...")
 		os.Exit(0)
 	default:
 		logger.Info("Comando no reconocido: %s", command)
-		logger.Info("Comandos disponibles: aspd, monitor, debug, stats, quit")
+		logger.Info("Comandos disponibles: aspd, monitor, debug, stats, metrics, timing, benchmark, predictor, quit")
 	}
 }
 
@@ -394,4 +427,79 @@ func showDetailedStats(memClient *memory.Client, serviceManager *services.Servic
 	// Stats del servicio
 	serviceStats := serviceManager.GetStats()
 	logger.Info("Servicios: %v", serviceStats)
+}
+
+// toggleMetrics habilita/deshabilita las métricas
+func toggleMetrics() {
+	metricsInstance := metrics.GetMetrics()
+	if metricsInstance.Enabled {
+		metricsInstance.Disable()
+		logger.Info("📊 Métricas deshabilitadas")
+	} else {
+		if err := metricsInstance.Enable(6060); err != nil {
+			logger.Error("Error habilitando métricas: %v", err)
+		} else {
+			logger.Info("📊 Métricas habilitadas en puerto 6060")
+			logger.Info("🔍 pprof disponible en: http://localhost:6060/debug/pprof/")
+			logger.Info("📈 Métricas disponibles en: http://localhost:6060/metrics")
+		}
+	}
+}
+
+// toggleTiming habilita/deshabilita la optimización de timing
+func toggleTiming() {
+	timingOptimizer := timing.GetOptimizer()
+	if timingOptimizer.IsEnabled() {
+		if err := timingOptimizer.Disable(); err != nil {
+			logger.Error("Error deshabilitando timing optimizer: %v", err)
+		} else {
+			logger.Info("⚡ Optimización de timing deshabilitada")
+		}
+	} else {
+		if err := timingOptimizer.Enable(); err != nil {
+			logger.Error("Error habilitando timing optimizer: %v", err)
+		} else {
+			logger.Info("⚡ Optimización de timing habilitada (timeBeginPeriod=1ms)")
+			logger.Info("💡 Esto puede mejorar la precisión de los timers en Windows")
+		}
+	}
+}
+
+// runTimingBenchmark ejecuta un benchmark de precisión de timing
+func runTimingBenchmark() {
+	logger.Info("🏃 Ejecutando benchmark de timing...")
+
+	timingOptimizer := timing.GetOptimizer()
+	stats := timingOptimizer.BenchmarkTiming()
+
+	logger.Info("📊 Resultados del benchmark:")
+	logger.Info("- Iteraciones: %v", stats["iterations"])
+	logger.Info("- Delay objetivo: %v", stats["target_delay"])
+	logger.Info("- Error promedio: %v (%v μs)", stats["avg_error"], stats["avg_error_us"])
+	logger.Info("- Error máximo: %v (%v μs)", stats["max_error"], stats["max_error_us"])
+	logger.Info("- Error mínimo: %v (%v μs)", stats["min_error"], stats["min_error_us"])
+
+	if timingOptimizer.IsEnabled() {
+		logger.Info("✅ Timing optimizer está HABILITADO")
+	} else {
+		logger.Info("❌ Timing optimizer está DESHABILITADO")
+	}
+}
+
+// showPredictorStats muestra estadísticas del predictor
+func showPredictorStats(serviceManager *services.ServiceManager) {
+	logger.Info("🧠 Estadísticas del Predictor:")
+
+	// Obtener estadísticas del service manager
+	stats := serviceManager.GetStats()
+	logger.Info("📊 Servicios activos: %v", stats)
+
+	// Mostrar información sobre el predictor
+	logger.Info("🔍 El predictor analiza los últimos 20 puntos de datos")
+	logger.Info("⏱️ Predice HP/SP con 200ms de anticipación")
+	logger.Info("📈 Usa regresión lineal para calcular tendencias")
+	logger.Info("💡 Busca en los logs los mensajes:")
+	logger.Info("   - 🧠 HP/SP Pot PREDICCIÓN: Cuando usa predicción")
+	logger.Info("   - 💊 HP/SP Pot NORMAL: Cuando usa HP/SP actual")
+	logger.Info("   - 📊 HP/SP Status: Información periódica del predictor")
 }

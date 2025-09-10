@@ -39,6 +39,15 @@ type Config struct {
 		ShowDebug bool   `json:"show_debug"`
 		LogLevel  string `json:"log_level"`
 	} `json:"ui"`
+
+	Metrics struct {
+		Enabled bool `json:"enabled"`
+		Port    int  `json:"port"`
+	} `json:"metrics"`
+
+	Timing struct {
+		Enabled bool `json:"enabled"`
+	} `json:"timing"`
 }
 
 // DefaultConfig returns the default configuration
@@ -93,6 +102,18 @@ func DefaultConfig() *Config {
 		}{
 			ShowDebug: false,
 			LogLevel:  "info",
+		},
+		Metrics: struct {
+			Enabled bool `json:"enabled"`
+			Port    int  `json:"port"`
+		}{
+			Enabled: false,
+			Port:    6060,
+		},
+		Timing: struct {
+			Enabled bool `json:"enabled"`
+		}{
+			Enabled: false, // Deshabilitado por defecto para evitar problemas de compatibilidad
 		},
 	}
 }

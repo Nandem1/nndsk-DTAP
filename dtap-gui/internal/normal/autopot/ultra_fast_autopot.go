@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"dtap-gui/internal/memory"
+	"dtap-gui/internal/metrics"
+	"dtap-gui/internal/prediction"
 	"dtap-gui/pkg/config"
 	"dtap-gui/pkg/constants"
 	"dtap-gui/pkg/logger"
@@ -34,13 +36,17 @@ type UltraFastAutoPot struct {
 	lastSPPercent int
 	potionsUsed   int64
 
-	// Sistema de predicción para anticipar el pot 200ms antes
-	hpHistory      []int     // Historial de HP para detectar tendencias
-	spHistory      []int     // Historial de SP para detectar tendencias
-	lastHPCheck    time.Time // Última vez que se revisó HP
-	lastSPCheck    time.Time // Última vez que se revisó SP
-	predictionMode bool      // Si está en modo predicción activo
-	damageRate     float64   // Tasa de daño por segundo detectada
+	// Sistema de predicción optimizado con ring buffer
+	predictor      *prediction.Predictor // Predictor con ring buffer
+	lastHPCheck    time.Time             // Última vez que se revisó HP
+	lastSPCheck    time.Time             // Última vez que se revisó SP
+	predictionMode bool                  // Si está en modo predicción activo
+	damageRate     float64               // Tasa de daño por segundo detectada
+
+	// Tracking de predicción para logs
+	predictionStartTime time.Time     // Cuando empezó la predicción
+	predictionDuration  time.Duration // Duración total de la predicción
+	lastHPAt100Percent  time.Time     // Última vez que HP estuvo al 100%
 }
 
 // NewUltraFastAutoPot crea el autopot más rápido posible
@@ -62,8 +68,7 @@ func NewUltraFastAutoPot(cfg *config.Config, memClient *memory.Client, windowHan
 		lastLogTime:    time.Now(),
 		lastHPPercent:  100,
 		lastSPPercent:  100,
-		hpHistory:      make([]int, 0, 10), // Historial de 10 muestras
-		spHistory:      make([]int, 0, 10), // Historial de 10 muestras
+		predictor:      prediction.NewPredictor(20, 200*time.Millisecond), // 20 muestras, predicción 200ms
 		lastHPCheck:    time.Now(),
 		lastSPCheck:    time.Now(),
 		predictionMode: false,
@@ -82,38 +87,38 @@ func (s *UltraFastAutoPot) Start(ctx context.Context) {
 	go s.runUltraFastLoop(ctx)
 }
 
-// runUltraFastLoop - Loop principal ultra optimizado
+// ProcessAutoPot procesa el autopot (para scheduler)
+func (s *UltraFastAutoPot) ProcessAutoPot(ctx context.Context) error {
+	s.processAutoPotUltraFast()
+	s.loopCount++
+
+	// Reportar métricas
+	metrics.GetMetrics().IncrementAutoPotLoops()
+
+	return nil
+}
+
+// runUltraFastLoop - Loop optimizado con Ticker
 func (s *UltraFastAutoPot) runUltraFastLoop(ctx context.Context) {
+	// Ticker para AutoPot: 15ms (66 Hz) - crítico para supervivencia
+	ticker := time.NewTicker(15 * time.Millisecond)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-ticker.C:
 			s.loopCount++
 
-			// Procesar autopot ultra rápido
+			// Procesar autopot con timing controlado
 			s.processAutoPotUltraFast()
-
-			// Log deshabilitado para evitar interferencia con display
-			// if s.loopCount%50000 == 0 {
-			//	now := time.Now()
-			//	elapsed := now.Sub(startTime)
-			//	logger.Info("⚡ UltraFast AutoPot loop #%d: %v elapsed, %d potions used",
-			//		s.loopCount, elapsed, s.potionsUsed)
-			//	s.lastLogTime = now
-			// }
-
-			// Delay mínimo para evitar saturar el juego
-			// 9µs para alta estabilidad (mismo que el spammer)
-			time.Sleep(9 * time.Microsecond)
 		}
 	}
 }
 
 // processAutoPotUltraFast - Procesamiento ultra rápido con predicción
 func (s *UltraFastAutoPot) processAutoPotUltraFast() {
-	now := time.Now()
-
 	// Leer HP/SP de forma ultra rápida
 	hp, maxHP, err := s.memClient.ReadHP()
 	if err != nil {
@@ -129,26 +134,116 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 	hpPercent := int((float64(hp) / float64(maxHP)) * 100)
 	spPercent := int((float64(sp) / float64(maxSP)) * 100)
 
-	// Actualizar historial de HP para predicción
-	s.updateHPHistory(hpPercent, now)
-	s.updateSPHistory(spPercent, now)
+	// Actualizar predictor con nuevos datos
+	s.predictor.AddHP(float64(hpPercent))
+	s.predictor.AddSP(float64(spPercent))
 
 	// Sistema de predicción: anticipar el pot 200ms antes
-	predictedHP := s.predictHPIn200ms(hpPercent, now)
-	predictedSP := s.predictSPIn200ms(spPercent, now)
+	predictedHP, hpPredictionValid := s.predictor.PredictHP(200 * time.Millisecond)
+	predictedSP, spPredictionValid := s.predictor.PredictSP(200 * time.Millisecond)
 
 	// Auto pot HP con predicción - ultra rápido
-	if predictedHP < s.config.AutoPot.HPPercent || hpPercent < s.config.AutoPot.HPPercent {
+	shouldUseHPPot := hpPercent < s.config.AutoPot.HPPercent
+	usedPrediction := false
+	now := time.Now()
+
+	if hpPredictionValid {
+		predictionTriggered := predictedHP < float64(s.config.AutoPot.HPPercent)
+		// Usar predicción si predice que bajará por debajo del threshold
+		// Esto permite spamear HP pots aunque esté al 100% (como High Ping Mode inteligente)
+		if predictionTriggered {
+			shouldUseHPPot = true
+			usedPrediction = true
+
+			// Trackear tiempo de predicción (independientemente del HP actual)
+			if s.predictionStartTime.IsZero() {
+				s.predictionStartTime = now
+				s.lastHPAt100Percent = now
+			}
+		}
+	}
+
+	if shouldUseHPPot {
 		s.sendKeyUltraFast(s.hpPotKeyCode)
 		s.potionsUsed++
 		s.lastHPPercent = hpPercent
+
+		// Log detallado del motivo del potting
+		if usedPrediction {
+			// Calcular duración de predicción
+			var predictionDuration time.Duration
+			if !s.predictionStartTime.IsZero() {
+				predictionDuration = now.Sub(s.predictionStartTime)
+			}
+
+			if hpPercent >= s.config.AutoPot.HPPercent {
+				logger.Info("🧠 HP Pot PREDICCIÓN: HP actual=%d%%, predicho=%.1f%% en 200ms (threshold=%d%%) - Spameando desde hace %v",
+					hpPercent, predictedHP, s.config.AutoPot.HPPercent, predictionDuration.Round(time.Millisecond))
+			} else {
+				logger.Info("🧠 HP Pot PREDICCIÓN: HP actual=%d%%, predicho=%.1f%% en 200ms (threshold=%d%%) - Spameando desde hace %v",
+					hpPercent, predictedHP, s.config.AutoPot.HPPercent, predictionDuration.Round(time.Millisecond))
+			}
+		} else {
+			logger.Info("💊 HP Pot NORMAL: HP actual=%d%% (threshold=%d%%)",
+				hpPercent, s.config.AutoPot.HPPercent)
+		}
+
+		// Reportar métricas
+		metrics.GetMetrics().IncrementAutoPotEvents()
 	}
 
 	// Auto pot SP con predicción - ultra rápido
-	if predictedSP < s.config.AutoPot.SPPercent || spPercent < s.config.AutoPot.SPPercent {
+	shouldUseSPPot := spPercent < s.config.AutoPot.SPPercent
+	usedSPPrediction := false
+
+	if spPredictionValid {
+		spPredictionTriggered := predictedSP < float64(s.config.AutoPot.SPPercent)
+		// Usar predicción si predice que bajará por debajo del threshold
+		// Esto permite spamear SP pots aunque esté al 100% (como High Ping Mode inteligente)
+		if spPredictionTriggered {
+			shouldUseSPPot = true
+			usedSPPrediction = true
+		}
+	}
+
+	if shouldUseSPPot {
 		s.sendKeyUltraFast(s.spPotKeyCode)
 		s.potionsUsed++
 		s.lastSPPercent = spPercent
+
+		// Log detallado del motivo del potting
+		if usedSPPrediction {
+			logger.Info("🧠 SP Pot PREDICCIÓN: SP actual=%d%%, predicho=%.1f%% en 200ms (threshold=%d%%)",
+				spPercent, predictedSP, s.config.AutoPot.SPPercent)
+		} else {
+			logger.Info("💊 SP Pot NORMAL: SP actual=%d%% (threshold=%d%%)",
+				spPercent, s.config.AutoPot.SPPercent)
+		}
+
+		// Reportar métricas
+		metrics.GetMetrics().IncrementAutoPotEvents()
+	} else {
+		// Resetear tracking de predicción si no se está usando
+		if !usedSPPrediction && !s.predictionStartTime.IsZero() {
+			// La predicción terminó, mostrar duración total
+			totalDuration := now.Sub(s.predictionStartTime)
+			if totalDuration > 50*time.Millisecond { // Solo log si duró más de 50ms
+				logger.Info("✅ Predicción terminada: Duró %v spameando SP pots al 100%%",
+					totalDuration.Round(time.Millisecond))
+			}
+			s.predictionStartTime = time.Time{} // Reset
+		}
+
+		// Log de información del predictor cuando no se usan pots
+		if spPredictionValid && s.loopCount%100 == 0 { // Cada 100 loops para no spamear
+			logger.Info("📊 SP Status: actual=%d%%, predicho=%.1f%% en 200ms, threshold=%d%%",
+				spPercent, predictedSP, s.config.AutoPot.SPPercent)
+		}
+	}
+
+	if !shouldUseHPPot && hpPredictionValid && s.loopCount%100 == 0 {
+		logger.Info("📊 HP Status: actual=%d%%, predicho=%.1f%% en 200ms, threshold=%d%%",
+			hpPercent, predictedHP, s.config.AutoPot.HPPercent)
 	}
 }
 
@@ -233,98 +328,6 @@ func getKeyCodeUltraFast(key string) uint32 {
 // GetStats retorna estadísticas del autopot
 func (s *UltraFastAutoPot) GetStats() (int64, int64, time.Time) {
 	return s.loopCount, s.potionsUsed, s.lastLogTime
-}
-
-// updateHPHistory - Actualiza el historial de HP para predicción
-func (s *UltraFastAutoPot) updateHPHistory(hpPercent int, now time.Time) {
-	// Agregar al historial
-	s.hpHistory = append(s.hpHistory, hpPercent)
-
-	// Mantener solo los últimos 10 valores
-	if len(s.hpHistory) > 10 {
-		s.hpHistory = s.hpHistory[1:]
-	}
-
-	s.lastHPCheck = now
-}
-
-// updateSPHistory - Actualiza el historial de SP para predicción
-func (s *UltraFastAutoPot) updateSPHistory(spPercent int, now time.Time) {
-	// Agregar al historial
-	s.spHistory = append(s.spHistory, spPercent)
-
-	// Mantener solo los últimos 10 valores
-	if len(s.spHistory) > 10 {
-		s.spHistory = s.spHistory[1:]
-	}
-
-	s.lastSPCheck = now
-}
-
-// predictHPIn200ms - Predice el HP en 200ms basado en la tendencia
-func (s *UltraFastAutoPot) predictHPIn200ms(currentHP int, now time.Time) int {
-	if len(s.hpHistory) < 3 {
-		return currentHP // No hay suficiente historial
-	}
-
-	// Calcular la tasa de cambio de HP por segundo
-	timeDiff := now.Sub(s.lastHPCheck).Seconds()
-	if timeDiff <= 0 {
-		return currentHP
-	}
-
-	// Calcular tendencia de los últimos 3 valores
-	recent := s.hpHistory[len(s.hpHistory)-3:]
-	hpChange := float64(recent[0] - recent[2])     // Cambio en los últimos 3 checks
-	hpChangePerSecond := hpChange / (timeDiff * 3) // Cambio por segundo
-
-	// Si está perdiendo HP, predecir 200ms hacia adelante
-	if hpChangePerSecond < 0 {
-		predictedChange := hpChangePerSecond * 0.2 // 200ms = 0.2 segundos
-		predictedHP := currentHP + int(predictedChange)
-
-		// Asegurar que no sea negativo
-		if predictedHP < 0 {
-			predictedHP = 0
-		}
-
-		return predictedHP
-	}
-
-	return currentHP
-}
-
-// predictSPIn200ms - Predice el SP en 200ms basado en la tendencia
-func (s *UltraFastAutoPot) predictSPIn200ms(currentSP int, now time.Time) int {
-	if len(s.spHistory) < 3 {
-		return currentSP // No hay suficiente historial
-	}
-
-	// Calcular la tasa de cambio de SP por segundo
-	timeDiff := now.Sub(s.lastSPCheck).Seconds()
-	if timeDiff <= 0 {
-		return currentSP
-	}
-
-	// Calcular tendencia de los últimos 3 valores
-	recent := s.spHistory[len(s.spHistory)-3:]
-	spChange := float64(recent[0] - recent[2])     // Cambio en los últimos 3 checks
-	spChangePerSecond := spChange / (timeDiff * 3) // Cambio por segundo
-
-	// Si está perdiendo SP, predecir 200ms hacia adelante
-	if spChangePerSecond < 0 {
-		predictedChange := spChangePerSecond * 0.2 // 200ms = 0.2 segundos
-		predictedSP := currentSP + int(predictedChange)
-
-		// Asegurar que no sea negativo
-		if predictedSP < 0 {
-			predictedSP = 0
-		}
-
-		return predictedSP
-	}
-
-	return currentSP
 }
 
 // UpdateConfig actualiza la configuración

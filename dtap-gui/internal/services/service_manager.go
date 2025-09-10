@@ -5,10 +5,12 @@ import (
 	"sync"
 	"time"
 
+	"dtap-gui/internal/input"
 	"dtap-gui/internal/memory"
 	"dtap-gui/internal/normal/autobuff"
 	"dtap-gui/internal/normal/autopot"
 	"dtap-gui/internal/normal/spammer"
+	"dtap-gui/internal/scheduler"
 	"dtap-gui/pkg/config"
 	"dtap-gui/pkg/logger"
 
@@ -25,6 +27,9 @@ type ServiceManager struct {
 	spammerService  *spammer.UltraFastSpammer
 	autopotService  *autopot.UltraFastAutoPot
 	autobuffService *autobuff.UltraFastAutoBuff
+
+	// Scheduler centralizado
+	scheduler *scheduler.Scheduler
 
 	// Control de goroutines
 	wg      sync.WaitGroup
@@ -49,6 +54,7 @@ func NewServiceManager(cfg *config.Config, memClient *memory.Client, windowHandl
 		config:       cfg,
 		memClient:    memClient,
 		windowHandle: windowHandle,
+		scheduler:    scheduler.NewScheduler(),
 		ctx:          ctx,
 		cancel:       cancel,
 		stats: struct {
@@ -70,7 +76,7 @@ func (sm *ServiceManager) Start() error {
 		return nil // Ya está iniciado
 	}
 
-	logger.Info("🚀 Iniciando ServiceManager con mejores prácticas")
+	logger.Info("🚀 Iniciando ServiceManager con scheduler centralizado")
 
 	// Recrear contexto si fue cancelado anteriormente
 	if sm.ctx.Err() != nil {
@@ -78,20 +84,63 @@ func (sm *ServiceManager) Start() error {
 		logger.Info("🔄 Recreando contexto para reanudar servicios")
 	}
 
+	// Iniciar dispatcher de input (una sola vez)
+	input.Start(sm.ctx, sm.windowHandle)
+
 	// Inicializar servicios
 	sm.spammerService = spammer.NewUltraFastSpammer(sm.config, sm.windowHandle)
 	sm.autopotService = autopot.NewUltraFastAutoPot(sm.config, sm.memClient, sm.windowHandle)
 	sm.autobuffService = autobuff.NewUltraFastAutoBuff(sm.config, sm.memClient, sm.windowHandle)
 
-	// Iniciar servicios con control de goroutines
-	sm.startService("Spammer", sm.spammerService.Start)
-	sm.startService("AutoPot", sm.autopotService.Start)
-	sm.startService("AutoBuff", sm.autobuffService.Start)
+	// Configurar tareas del scheduler con prioridades
+	sm.setupSchedulerTasks()
+
+	// Iniciar scheduler
+	sm.scheduler.Start()
 
 	sm.started = true
 	logger.Info("✅ ServiceManager iniciado correctamente")
 
 	return nil
+}
+
+// setupSchedulerTasks configura las tareas del scheduler con prioridades
+func (sm *ServiceManager) setupSchedulerTasks() {
+	// AutoPot - Prioridad crítica (supervivencia)
+	if sm.config.AutoPot.Enabled {
+		sm.scheduler.AddTask(&scheduler.Task{
+			ID:          "autopot",
+			Priority:    scheduler.PriorityCritical,
+			Interval:    15 * time.Millisecond, // 66 Hz - crítico para supervivencia
+			Handler:     sm.autopotService.ProcessAutoPot,
+			Enabled:     true,
+			Description: "AutoPot - Supervivencia crítica",
+		})
+	}
+
+	// Spammer - Prioridad alta (combate)
+	if sm.config.Spammer.Enabled {
+		sm.scheduler.AddTask(&scheduler.Task{
+			ID:          "spammer",
+			Priority:    scheduler.PriorityHigh,
+			Interval:    10 * time.Millisecond, // 100 Hz - balance velocidad/estabilidad
+			Handler:     sm.spammerService.ProcessSpammer,
+			Enabled:     true,
+			Description: "Spammer - Combate prioritario",
+		})
+	}
+
+	// AutoBuff - Prioridad normal (soporte)
+	if sm.config.AutoBuff.Enabled {
+		sm.scheduler.AddTask(&scheduler.Task{
+			ID:          "autobuff",
+			Priority:    scheduler.PriorityNormal,
+			Interval:    250 * time.Millisecond, // 4 Hz - menos crítico
+			Handler:     sm.autobuffService.ProcessAutoBuff,
+			Enabled:     true,
+			Description: "AutoBuff - Soporte",
+		})
+	}
 }
 
 // startService inicia un servicio con control de goroutines

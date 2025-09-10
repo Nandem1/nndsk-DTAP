@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dtap-gui/internal/memory"
+	"dtap-gui/internal/metrics"
 	"dtap-gui/pkg/config"
 	"dtap-gui/pkg/constants"
 	"dtap-gui/pkg/logger"
@@ -102,38 +103,38 @@ func (s *UltraFastAutoBuff) Start(ctx context.Context) {
 	go s.runUltraFastLoop(ctx)
 }
 
-// runUltraFastLoop - Loop principal ultra optimizado
+// ProcessAutoBuff procesa el autobuff (para scheduler)
+func (s *UltraFastAutoBuff) ProcessAutoBuff(ctx context.Context) error {
+	s.processAutoBuffUltraFast()
+	s.loopCount++
+
+	// Sistema inteligente de velocidad
+	s.adjustSpeedBasedOnSuccess()
+
+	// Reportar métricas
+	metrics.GetMetrics().IncrementAutoBuffLoops()
+
+	return nil
+}
+
+// runUltraFastLoop - Loop optimizado con Ticker
 func (s *UltraFastAutoBuff) runUltraFastLoop(ctx context.Context) {
+	// Ticker para AutoBuff: 250ms (4 Hz) - menos crítico, optimizado para eficiencia
+	ticker := time.NewTicker(250 * time.Millisecond)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		default:
+		case <-ticker.C:
 			s.loopCount++
 
-			// Procesar autobuff ultra rápido
+			// Procesar autobuff con timing controlado
 			s.processAutoBuffUltraFast()
-
-			// Log deshabilitado para evitar interferencia con display
-			// if s.loopCount%50000 == 0 {
-			//	now := time.Now()
-			//	elapsed := now.Sub(startTime)
-			//	logger.Info("⚡ UltraFast AutoBuff loop #%d: %v elapsed, %d buffs used",
-			//		s.loopCount, elapsed, s.buffsUsed)
-			//	s.lastLogTime = now
-			// }
 
 			// Sistema inteligente de velocidad
 			s.adjustSpeedBasedOnSuccess()
-
-			// Delay dinámico basado en el modo
-			if s.slowMode {
-				time.Sleep(s.slowModeDelay)
-			} else {
-				// Delay mínimo para evitar saturar el juego
-				// 9µs para alta estabilidad (mismo que spammer y autopot)
-				time.Sleep(9 * time.Microsecond)
-			}
 		}
 	}
 }
@@ -245,14 +246,19 @@ func (s *UltraFastAutoBuff) useBuffsIfNeeded(now time.Time) {
 func (s *UltraFastAutoBuff) adjustSpeedBasedOnSuccess() {
 	now := time.Now()
 
-	// Si han pasado más de 3 segundos sin buffs exitosos, activar modo lento
-	if now.Sub(s.lastSuccessfulBuff) > 3*time.Second && !s.slowMode {
-		s.slowMode = true
-		logger.Info("🔄 AutoBuff: Sin consumibles detectado, activando modo lento (3s delay)")
+	// Solo activar modo lento si realmente no hay consumibles disponibles
+	// y han pasado más de 5 segundos sin buffs exitosos
+	if now.Sub(s.lastSuccessfulBuff) > 5*time.Second && !s.slowMode {
+		// Verificar si realmente no hay consumibles disponibles
+		if !s.foundGloom && !s.foundAspd {
+			s.slowMode = true
+			logger.Info("🔄 AutoBuff: Sin consumibles detectado, activando modo lento (3s delay)")
+		}
 	}
 
-	// Si tenemos buffs activos, volver al modo rápido
-	if s.foundGloom && s.foundAspd && s.slowMode {
+	// Solo volver al modo rápido si realmente se usaron consumibles
+	// y tenemos buffs activos
+	if s.slowMode && (s.foundGloom || s.foundAspd) {
 		s.slowMode = false
 		s.consecutiveFailures = 0
 		logger.Info("⚡ AutoBuff: Consumibles disponibles, volviendo a modo ultra rápido")

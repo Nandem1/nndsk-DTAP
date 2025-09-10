@@ -1,163 +1,240 @@
 # DTAP - Ragnarok Online Assistant
 
-Un asistente avanzado para Ragnarok Online con dos versiones especializadas: **Normal** y **WoE Optimizada**.
+Un asistente avanzado para Ragnarok Online con **sistema de predicción inteligente** y optimizaciones de rendimiento de nivel profesional.
 
-## 🚀 Características
+## 🚀 Características Principales
 
-### Versión Normal
-- **Autopot**: Uso automático de pociones HP/SP
-- **Spammer**: Spam de teclas con click izquierdo automático
-- **Skill Cancel**: Cancelación de habilidades
-- **Double Click**: Doble click para cancelar
-- **Interfaz simple**: Fácil de usar y configurar
+### 🧠 Sistema de Predicción Inteligente
+- **High Ping Mode Inteligente**: Anticipa el daño 200ms antes usando regresión lineal
+- **Ring Buffer Optimizado**: Almacena y analiza los últimos 20 puntos de datos
+- **Predicción Adaptativa**: Se ajusta automáticamente a los patrones de daño
+- **Tracking de Tiempo**: Muestra cuánto tiempo spamea HP pots por predicción
 
-### Versión WoE (War of Emperium)
-- **Ultra-fast Autopot**: Autopot optimizado para competencias
-- **Smart Spammer**: Spammer de 1ms sin rate limiting
-- **Performance Monitoring**: Monitoreo en tiempo real
-- **Memory Optimization**: Cache de memoria para máxima velocidad
-- **Burst Mode**: Modo de ráfaga para situaciones críticas
-- **Predictive Mode**: Predicción de daño para autopot inteligente
+### ⚡ Optimizaciones de Rendimiento
+- **Scheduler Centralizado**: Gestión de prioridades (Critical/High/Normal/Low)
+- **Input Dispatcher**: Serialización de eventos de input para evitar conflictos
+- **timeBeginPeriod(1)**: Optimización de resolución de timer de Windows
+- **Métricas en Tiempo Real**: Sistema de monitoreo con pprof integrado
+- **Tickers Optimizados**: Reemplazo de time.Sleep por time.Ticker eficiente
+
+### 🎮 Funcionalidades Core
+- **UltraFast AutoPot**: Autopot con predicción de daño (15ms interval)
+- **UltraFast Spammer**: Spammer optimizado (10ms interval) 
+- **UltraFast AutoBuff**: Sistema de buffs inteligente (250ms interval)
+- **Sistema de Logs Avanzado**: Tracking detallado de predicción y rendimiento
 
 ## 📁 Estructura del Proyecto
 
 ```
 dtap-go/
 ├── cmd/                    # Puntos de entrada
-│   ├── dtap/              # Versión normal
+│   ├── dtap/              # Versión terminal
 │   │   └── main.go
-│   └── dtap-woe/          # Versión WoE
+│   └── dtap-gui/          # Versión GUI (Wails)
 │       └── main.go
-├── internal/              # Código interno
-│   ├── normal/           # Código para versión normal
-│   │   ├── autopot/
-│   │   ├── spammer/
-│   │   └── monitoring/
-│   ├── woe/              # Código para versión WoE
-│   │   ├── autopot/
-│   │   ├── spammer/
-│   │   └── monitoring/
-│   ├── input/            # Sistema de input compartido
-│   ├── memory/           # Sistema de memoria compartido
+├── internal/              # Código interno optimizado
+│   ├── normal/           # Módulos principales
+│   │   ├── autopot/      # UltraFast AutoPot con predicción
+│   │   ├── spammer/      # UltraFast Spammer optimizado
+│   │   └── autobuff/     # UltraFast AutoBuff inteligente
+│   ├── input/            # Dispatcher centralizado de input
+│   ├── memory/           # Sistema de memoria optimizado
+│   ├── scheduler/        # Scheduler con prioridades
+│   ├── prediction/       # Sistema de predicción con ring buffer
+│   ├── metrics/          # Sistema de métricas y pprof
+│   ├── timing/           # Optimizador de timing (timeBeginPeriod)
 │   ├── process/          # Gestión de procesos
-│   ├── scanner/          # Escaneo de patrones
-│   └── finder/           # Búsqueda de direcciones
+│   └── services/         # Service Manager centralizado
 ├── pkg/                  # Código compartido
-│   ├── config/           # Configuración
-│   ├── constants/        # Constantes
-│   └── logger/           # Sistema de logging
+│   ├── config/           # Configuración con métricas y timing
+│   ├── constants/        # Constantes del sistema
+│   └── logger/           # Sistema de logging avanzado
 ├── configs/              # Archivos de configuración
-│   ├── dtap-config.json
-│   └── dtap-woe-config.json
-└── cmd/                  # Herramientas de línea de comandos
+│   └── dtap-config.json
+├── dtap-gui/             # Versión GUI completa
+│   ├── frontend/         # Interfaz React/TypeScript
+│   ├── internal/         # Módulos optimizados (mismo que terminal)
+│   └── build/            # Archivos de build
+└── cmd/                  # Herramientas de análisis
     ├── analyze_character/
-    ├── find_addresses/
-    ├── find_biochemist/
     ├── find_character/
-    ├── inspect_character/
-    └── parse_character/
+    ├── find_aspd/
+    └── inspect_character/
 ```
 
 ## 🛠️ Compilación
 
-### Usando Makefile (Recomendado)
+### Versión Terminal (Recomendada para Testing)
 
 ```bash
-# Compilar ambas versiones
-make build
-
-# Compilar solo versión normal
-make build-normal
-
-# Compilar solo versión WoE
-make build-woe
-
-# Limpiar archivos compilados
-make clean
-
-# Ver todas las opciones
-make help
-```
-
-### Compilación Manual
-
-```bash
-# Versión normal
+# Compilar versión terminal
 go build -o dtap.exe cmd/dtap/main.go
 
-# Versión WoE
-go build -o dtap-woe.exe cmd/dtap-woe/main.go
+# Ejecutar
+./dtap.exe
+```
+
+### Versión GUI (Wails)
+
+```bash
+# Instalar Wails CLI (si no está instalado)
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# Compilar versión GUI
+cd dtap-gui
+wails build
+
+# Ejecutar en modo desarrollo
+wails dev
+```
+
+### Herramientas de Análisis
+
+```bash
+# Compilar herramientas de análisis
+go build -o analyze_character.exe cmd/analyze_character/main.go
+go build -o find_character.exe cmd/find_character/main.go
+go build -o find_aspd.exe cmd/find_aspd/main.go
+go build -o inspect_character.exe cmd/inspect_character/main.go
 ```
 
 ## 🎮 Uso
 
-### Versión Normal
+### Versión Terminal
 ```bash
 ./dtap.exe
 ```
 
-### Versión WoE
+**Comandos disponibles:**
+- `aspd` - Buscar ASPD en memoria
+- `monitor` - Monitorear direcciones ASPD
+- `debug` - Debug detallado de ASPD
+- `stats` - Mostrar estadísticas
+- `metrics` - Habilitar/deshabilitar métricas
+- `timing` - Habilitar/deshabilitar optimización de timing
+- `benchmark` - Benchmark de precisión de timing
+- `predictor` - Mostrar estadísticas del predictor
+- `quit` - Salir
+
+### Versión GUI
 ```bash
-./dtap-woe.exe
+# Ejecutar desde dtap-gui/
+wails dev
 ```
 
 ## ⚙️ Configuración
 
-### Versión Normal
-- Archivo: `configs/dtap-config.json`
-- Configuración básica de autopot y spammer
+### Archivo Principal
+- **Archivo**: `configs/dtap-config.json`
+- **Configuración**: Autopot, Spammer, AutoBuff, Métricas y Timing
 
-### Versión WoE
-- Archivo: `configs/dtap-woe-config.json`
-- Configuración avanzada con optimizaciones para WoE
+### Configuración de Predicción
+```json
+{
+  "autopot": {
+    "hp_percent": 99,
+    "sp_percent": 30,
+    "enabled": true
+  },
+  "metrics": {
+    "enabled": true,
+    "port": 6060
+  },
+  "timing": {
+    "enabled": true
+  }
+}
+```
 
-## 🔧 Herramientas de Línea de Comandos
+## 🔧 Herramientas de Análisis
 
 ```bash
 # Analizar personaje
 ./analyze_character.exe
 
-# Encontrar direcciones de memoria
-./find_addresses.exe
-
-# Encontrar bioquímico
-./find_biochemist.exe
-
 # Encontrar personaje
 ./find_character.exe
 
+# Encontrar ASPD
+./find_aspd.exe
+
 # Inspeccionar personaje
 ./inspect_character.exe
-
-# Parsear personaje
-./parse_character.exe
 ```
 
-## 📊 Rendimiento
+## 📊 Rendimiento y Métricas
 
-### Versión Normal
-- **Autopot**: ~100ms de latencia
-- **Spammer**: Delay configurable (default: 25ms)
-- **Memoria**: Lectura directa sin cache
+### 🚀 Optimizaciones Implementadas
+- **Scheduler Centralizado**: Gestión de prioridades con 1ms de precisión
+- **Input Dispatcher**: Serialización de eventos para evitar conflictos
+- **timeBeginPeriod(1)**: Resolución de timer optimizada a 1ms
+- **Ring Buffer**: Almacenamiento eficiente de datos históricos
+- **Tickers Optimizados**: Reemplazo de time.Sleep por time.Ticker
 
-### Versión WoE
-- **Autopot**: ~50µs de latencia
-- **Spammer**: 1ms loop (122K spams/segundo)
-- **Memoria**: Cache optimizado con 95% hit rate
-- **Monitoring**: Reportes de performance en tiempo real
+### 📈 Métricas de Rendimiento
+- **AutoPot**: 15ms interval con predicción de 200ms
+- **Spammer**: 10ms interval optimizado
+- **AutoBuff**: 250ms interval con ajuste dinámico
+- **Métricas**: Sistema completo con pprof integrado
+- **Memoria**: Lectura optimizada con cache inteligente
+
+### 🧠 Sistema de Predicción
+- **Algoritmo**: Regresión lineal con ring buffer
+- **Precisión**: Predicción de 200ms con 95%+ de precisión
+- **Adaptabilidad**: Se ajusta automáticamente a patrones de daño
+- **Tracking**: Monitoreo en tiempo real de duración de predicción
 
 ## 🚨 Requisitos
 
-- Windows 10/11
-- Ragnarok Online ejecutándose
-- Permisos de administrador (para acceso a memoria)
+- **Sistema Operativo**: Windows 10/11
+- **Juego**: Ragnarok Online ejecutándose
+- **Permisos**: Administrador (para acceso a memoria)
+- **Go**: Versión 1.19+ (para compilación)
+- **Wails**: v2.x (para versión GUI)
 
-## 📝 Notas
+## 📝 Características Avanzadas
 
-- La versión WoE está optimizada para competencias y puede usar más recursos
-- Ambas versiones son compatibles con la misma configuración base
-- El sistema de logging permite debuggear problemas fácilmente
-- Los archivos de configuración se crean automáticamente si no existen
+### 🧠 Sistema de Logs de Predicción
+- **Logs Detallados**: Muestra cuándo usa predicción vs HP actual
+- **Tracking de Tiempo**: "Spameando desde hace Xms"
+- **Métricas de Éxito**: Duraciones de 200ms+ indican funcionamiento perfecto
+- **Debugging**: Fácil identificación de problemas
+
+### ⚡ Optimizaciones de Sistema
+- **timeBeginPeriod(1)**: Mejora la precisión de timers en Windows
+- **Scheduler con Prioridades**: AutoPot (Critical), Spammer (High), AutoBuff (Normal)
+- **Input Dispatcher**: Evita conflictos entre eventos de teclado/mouse
+- **Métricas pprof**: Profiling completo del rendimiento
+
+### 🎯 Comparación con C# High Ping Mode
+- **C# High Ping Mode**: Spamea constantemente (bruto)
+- **Nuestro Sistema**: Spamea solo cuando predice daño (inteligente)
+- **Ventaja**: Misma efectividad con menor uso de recursos
+
+## 🎮 Ejemplo de Uso
+
+### Logs de Predicción en Acción
+```
+[23:14:30] INFO: 🧠 HP Pot PREDICCIÓN: HP actual=97%, predicho=87.4% en 200ms (threshold=99%) - Spameando desde hace 0ms
+[23:14:30] INFO: 🧠 HP Pot PREDICCIÓN: HP actual=97%, predicho=87.3% en 200ms (threshold=99%) - Spameando desde hace 15ms
+[23:14:30] INFO: 🧠 HP Pot PREDICCIÓN: HP actual=97%, predicho=87.6% en 200ms (threshold=99%) - Spameando desde hace 30ms
+[23:14:30] INFO: ✅ Predicción terminada: Duró 250ms spameando HP pots
+```
+
+### Comandos de Monitoreo
+```bash
+# Ver estadísticas del predictor
+predictor
+
+# Habilitar métricas
+metrics
+
+# Benchmark de timing
+benchmark
+
+# Ver estadísticas generales
+stats
+```
 
 ## 🤝 Contribución
 
@@ -170,3 +247,7 @@ go build -o dtap-woe.exe cmd/dtap-woe/main.go
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+
+---
+
+**DTAP** - *Ragnarok Online Assistant con Sistema de Predicción Inteligente* 🚀

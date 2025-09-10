@@ -26,5 +26,12 @@
   "ui": {
     "show_debug": false,
     "log_level": "info"
+  },
+  "metrics": {
+    "enabled": false,
+    "port": 0
+  },
+  "timing": {
+    "enabled": false
   }
 }

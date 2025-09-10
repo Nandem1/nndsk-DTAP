@@ -6,8 +6,9 @@ import (
 	"syscall"
 	"time"
 
+	"dtap-gui/internal/input"
+	"dtap-gui/internal/metrics"
 	"dtap-gui/pkg/config"
-	"dtap-gui/pkg/constants"
 	"dtap-gui/pkg/logger"
 
 	"golang.org/x/sys/windows"
@@ -85,30 +86,32 @@ func (s *UltraFastSpammer) Start(ctx context.Context) {
 	go s.runUltraFastLoop(ctx)
 }
 
-// runUltraFastLoop - Loop ultra rápido con timing preciso
+// ProcessSpammer procesa el spammer (para scheduler)
+func (s *UltraFastSpammer) ProcessSpammer(ctx context.Context) error {
+	s.processKeysUltraFast()
+	s.loopCount++
+
+	// Reportar métricas
+	metrics.GetMetrics().IncrementSpammerLoops()
+
+	return nil
+}
+
+// runUltraFastLoop - Loop optimizado con Ticker
 func (s *UltraFastSpammer) runUltraFastLoop(ctx context.Context) {
+	// Ticker para spammer: 10ms (100 Hz) - balance entre velocidad y estabilidad
+	ticker := time.NewTicker(10 * time.Millisecond)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			logger.Info("UltraFastSpammer detenido")
 			return
-		default:
-			// Procesar teclas - SIN timing para máxima velocidad
+		case <-ticker.C:
+			// Procesar teclas con timing controlado
 			s.processKeysUltraFast()
 			s.loopCount++
-
-			// Log deshabilitado para evitar interferencia con display
-			// if s.loopCount%50000 == 0 {
-			//	now = time.Now()
-			//	elapsed = now.Sub(s.lastLogTime)
-			//	logger.Info("⚡ UltraFast loop #%d: %v elapsed (ANIMATION CANCEL MODE)",
-			//		s.loopCount, elapsed)
-			//	s.lastLogTime = now
-			// }
-
-			// Delay mínimo para evitar saturar el juego
-			// 9µs para alta estabilidad
-			time.Sleep(9 * time.Microsecond)
 		}
 	}
 }
@@ -137,11 +140,6 @@ func (s *UltraFastSpammer) processKeysUltraFast() {
 		// Verificación ultra rápida
 		state, _, _ := s.getAsyncKeyState.Call(uintptr(keyCode))
 		if state&0x8000 != 0 { // Key is pressed
-			// Log deshabilitado para evitar interferencia con display
-			// if s.loopCount%1000 == 0 {
-			//	logger.Info("🎯 Key pressed detected! Loop #%d, keyCode: %d", s.loopCount, keyCode)
-			// }
-
 			// Enviar tecla ultra rápido
 			s.sendKeyUltraFast(keyCode)
 
@@ -158,46 +156,13 @@ func (s *UltraFastSpammer) processKeysUltraFast() {
 
 // sendKeyUltraFast - Envío de tecla ultra optimizado
 func (s *UltraFastSpammer) sendKeyUltraFast(keyCode uint32) {
-	// PostMessage directo - sin verificaciones para máxima velocidad
-	s.postMessage.Call(
-		uintptr(s.windowHandle),
-		constants.WM_KEYDOWN,
-		uintptr(keyCode),
-		0,
-	)
-
-	// Delay mínimo para que RO procese el input
-	time.Sleep(9 * time.Microsecond)
-
-	// KeyUp
-	s.postMessage.Call(
-		uintptr(s.windowHandle),
-		constants.WM_KEYUP,
-		uintptr(keyCode),
-		0,
-	)
+	// Publicar en dispatcher para serializar PostMessageW
+	input.SendKey(keyCode)
 }
 
 // sendMouseClickUltraFast - Mouse click ultra optimizado
 func (s *UltraFastSpammer) sendMouseClickUltraFast() {
-	// MouseDown - sin verificaciones para máxima velocidad
-	s.postMessage.Call(
-		uintptr(s.windowHandle),
-		constants.WM_LBUTTONDOWN,
-		0,
-		0,
-	)
-
-	// Delay mínimo para que RO procese el mouse
-	time.Sleep(9 * time.Microsecond)
-
-	// MouseUp
-	s.postMessage.Call(
-		uintptr(s.windowHandle),
-		constants.WM_LBUTTONUP,
-		0,
-		0,
-	)
+	input.SendLeftClick()
 }
 
 // getKeyCodeUltraFast - Conversión ultra rápida de tecla a código
