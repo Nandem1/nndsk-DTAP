@@ -40,6 +40,10 @@ type UltraFastSpammer struct {
 	// Smoothing para eliminar picos
 	lastDelays [5]time.Duration // Últimos 5 delays para promedio
 	delayIndex int              // Índice circular
+
+	// Control de ratio teclas/clicks
+	keyPressCount int64     // Contador de teclas presionadas
+	lastClickTime time.Time // Último tiempo de click
 }
 
 // NewUltraFastSpammer crea el spammer más rápido posible
@@ -68,6 +72,8 @@ func NewUltraFastSpammer(cfg *config.Config, windowHandle windows.Handle) *Ultra
 		targetDelay:      targetDelay,
 		lastLogTime:      time.Now(),
 		lastProcess:      time.Now(),
+		keyPressCount:    0,
+		lastClickTime:    time.Now(),
 	}
 }
 
@@ -105,24 +111,42 @@ func (s *UltraFastSpammer) ProcessSpammer(ctx context.Context) error {
 	return nil
 }
 
-// runUltraFastLoop - Loop optimizado con Ticker
+// runUltraFastLoop - Loop ultra optimizado sin Ticker
 func (s *UltraFastSpammer) runUltraFastLoop(ctx context.Context) {
-	// Ticker para spammer: 10ms (100 Hz) - balance entre velocidad y estabilidad
-	ticker := time.NewTicker(10 * time.Millisecond)
-	defer ticker.Stop()
+	// Loop ultra rápido sin ticker para máxima velocidad
+	// Solo usar ticker si el delay es >= 5ms
+	if s.targetDelay >= 5*time.Millisecond {
+		ticker := time.NewTicker(s.targetDelay)
+		defer ticker.Stop()
 
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("UltraFastSpammer detenido")
-			return
-		case <-ticker.C:
-			// Procesar teclas con timing controlado
-			s.processKeysUltraFast()
-			s.loopCount++
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Info("UltraFastSpammer detenido")
+				return
+			case <-ticker.C:
+				s.processKeysUltraFast()
+				s.loopCount++
+				metrics.GetMetrics().IncrementSpammerLoops()
+			}
+		}
+	} else {
+		// Loop ultra rápido para delays < 5ms
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Info("UltraFastSpammer detenido")
+				return
+			default:
+				s.processKeysUltraFast()
+				s.loopCount++
+				metrics.GetMetrics().IncrementSpammerLoops()
 
-			// Reportar métricas
-			metrics.GetMetrics().IncrementSpammerLoops()
+				// Busy wait para delays ultra bajos
+				if s.targetDelay > 0 {
+					s.busyWait(s.targetDelay)
+				}
+			}
 		}
 	}
 }
@@ -140,7 +164,7 @@ func (s *UltraFastSpammer) busyWait(duration time.Duration) {
 	}
 }
 
-// processKeysUltraFast - Procesamiento ultra optimizado
+// processKeysUltraFast - Procesamiento ultra optimizado con control de ratio
 func (s *UltraFastSpammer) processKeysUltraFast() {
 	// Verificar todas las teclas con early exit
 	for _, keyCode := range s.keyCodes {
@@ -153,10 +177,15 @@ func (s *UltraFastSpammer) processKeysUltraFast() {
 		if state&0x8000 != 0 { // Key is pressed
 			// Enviar tecla ultra rápido
 			s.sendKeyUltraFast(keyCode)
+			s.keyPressCount++
 
-			// Mouse click si está habilitado
+			// Control de ratio para clicks del mouse
 			if s.config.Spammer.MouseClick {
-				s.sendMouseClickUltraFast()
+				shouldClick := s.shouldSendClick()
+				if shouldClick {
+					s.sendMouseClickUltraFast()
+					s.lastClickTime = time.Now()
+				}
 			}
 
 			// Early exit - si encontramos una tecla presionada, no necesitamos verificar las demás
@@ -174,9 +203,31 @@ func (s *UltraFastSpammer) sendKeyUltraFast(keyCode uint32) {
 	metrics.GetMetrics().IncrementSpammerEvents()
 }
 
+// shouldSendClick - Determina si se debe enviar un click basado en el ratio configurado
+func (s *UltraFastSpammer) shouldSendClick() bool {
+	// Si no hay ratio configurado o es 0, enviar click siempre (comportamiento original)
+	if s.config.Spammer.KeyClickRatio <= 0 {
+		return true
+	}
+
+	// Verificar si ha pasado suficiente tiempo desde el último click
+	timeSinceLastClick := time.Since(s.lastClickTime)
+	clickDelay := time.Duration(s.config.Spammer.ClickDelay) * time.Millisecond
+
+	if timeSinceLastClick < clickDelay {
+		return false
+	}
+
+	// Verificar si hemos presionado suficientes teclas para justificar un click
+	return s.keyPressCount >= int64(s.config.Spammer.KeyClickRatio)
+}
+
 // sendMouseClickUltraFast - Mouse click ultra optimizado
 func (s *UltraFastSpammer) sendMouseClickUltraFast() {
 	input.SendLeftClick()
+
+	// Resetear contador después del click
+	s.keyPressCount = 0
 
 	// Reportar métricas
 	metrics.GetMetrics().IncrementSpammerEvents()

@@ -10,12 +10,13 @@ import (
 // Config represents the application configuration
 type Config struct {
 	AutoPot struct {
-		HPPotKey   string `json:"hp_pot_key"`
-		SPPotKey   string `json:"sp_pot_key"`
-		HPPercent  int    `json:"hp_percent"`
-		SPPercent  int    `json:"sp_percent"`
-		CheckDelay int    `json:"check_delay_ms"`
-		Enabled    bool   `json:"enabled"`
+		HPPotKey       string `json:"hp_pot_key"`
+		SPPotKey       string `json:"sp_pot_key"`
+		HPPercent      int    `json:"hp_percent"`
+		SPPercent      int    `json:"sp_percent"`
+		CheckDelay     int    `json:"check_delay_ms"`
+		Enabled        bool   `json:"enabled"`
+		PredictionMode bool   `json:"prediction_mode"` // Nuevo: activar/desactivar predicción
 	} `json:"autopot"`
 
 	AutoBuff struct {
@@ -31,6 +32,9 @@ type Config struct {
 		Delay      float64  `json:"delay_ms"` // Cambiado a float64 para soportar decimales
 		MouseClick bool     `json:"mouse_click"`
 		Mode       string   `json:"mode"` // "simple", "adaptive", "ultra", "ultra_fast"
+		// Nuevas opciones para controlar ratio teclas/clicks
+		KeyClickRatio int `json:"key_click_ratio"` // Ratio de teclas por click (ej: 3 = 3 teclas por 1 click)
+		ClickDelay    int `json:"click_delay_ms"`  // Delay adicional para clicks (en ms)
 	} `json:"spammer"`
 
 	UI struct {
@@ -52,19 +56,21 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		AutoPot: struct {
-			HPPotKey   string `json:"hp_pot_key"`
-			SPPotKey   string `json:"sp_pot_key"`
-			HPPercent  int    `json:"hp_percent"`
-			SPPercent  int    `json:"sp_percent"`
-			CheckDelay int    `json:"check_delay_ms"`
-			Enabled    bool   `json:"enabled"`
+			HPPotKey       string `json:"hp_pot_key"`
+			SPPotKey       string `json:"sp_pot_key"`
+			HPPercent      int    `json:"hp_percent"`
+			SPPercent      int    `json:"sp_percent"`
+			CheckDelay     int    `json:"check_delay_ms"`
+			Enabled        bool   `json:"enabled"`
+			PredictionMode bool   `json:"prediction_mode"`
 		}{
-			HPPotKey:   "F1",
-			SPPotKey:   "F2",
-			HPPercent:  50,
-			SPPercent:  30,
-			CheckDelay: 100,
-			Enabled:    true,
+			HPPotKey:       "F1",
+			SPPotKey:       "F2",
+			HPPercent:      50,
+			SPPercent:      30,
+			CheckDelay:     100,
+			Enabled:        true,
+			PredictionMode: true, // Por defecto habilitado
 		},
 		AutoBuff: struct {
 			Enabled  bool   `json:"enabled"`
@@ -78,17 +84,21 @@ func DefaultConfig() *Config {
 			AspdKey:  "F4",
 		},
 		Spammer: struct {
-			Enabled    bool     `json:"enabled"`
-			Keys       []string `json:"keys"`
-			Delay      float64  `json:"delay_ms"`
-			MouseClick bool     `json:"mouse_click"`
-			Mode       string   `json:"mode"`
+			Enabled       bool     `json:"enabled"`
+			Keys          []string `json:"keys"`
+			Delay         float64  `json:"delay_ms"`
+			MouseClick    bool     `json:"mouse_click"`
+			Mode          string   `json:"mode"`
+			KeyClickRatio int      `json:"key_click_ratio"`
+			ClickDelay    int      `json:"click_delay_ms"`
 		}{
-			Enabled:    false,
-			Keys:       []string{},
-			Delay:      1.0,      // Default to 1ms
-			MouseClick: true,     // Enable mouse click by default
-			Mode:       "simple", // Default to simple mode
+			Enabled:       false,
+			Keys:          []string{},
+			Delay:         1.0,          // Default to 1ms
+			MouseClick:    true,         // Enable mouse click by default
+			Mode:          "ultra_fast", // Default to ultra_fast mode
+			KeyClickRatio: 3,            // 3 teclas por 1 click por defecto
+			ClickDelay:    50,           // 50ms delay adicional para clicks
 		},
 		UI: struct {
 			ShowDebug bool   `json:"show_debug"`

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Home, Zap, Settings } from 'lucide-react'
+import ThemeToggle from './ThemeToggle'
 
 type Route = 'main' | 'cheats'
 
@@ -49,6 +50,11 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
               )
             })}
           </div>
+        </div>
+        
+        {/* Theme Toggle */}
+        <div className="flex items-center space-x-2 no-drag">
+          <ThemeToggle />
         </div>
         
         {/* Window Controls */}

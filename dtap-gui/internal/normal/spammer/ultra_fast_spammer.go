@@ -97,21 +97,40 @@ func (s *UltraFastSpammer) ProcessSpammer(ctx context.Context) error {
 	return nil
 }
 
-// runUltraFastLoop - Loop optimizado con Ticker
+// runUltraFastLoop - Loop ultra optimizado sin Ticker
 func (s *UltraFastSpammer) runUltraFastLoop(ctx context.Context) {
-	// Ticker para spammer: 10ms (100 Hz) - balance entre velocidad y estabilidad
-	ticker := time.NewTicker(10 * time.Millisecond)
-	defer ticker.Stop()
+	// Loop ultra rápido sin ticker para máxima velocidad
+	// Solo usar ticker si el delay es >= 5ms
+	if s.targetDelay >= 5*time.Millisecond {
+		ticker := time.NewTicker(s.targetDelay)
+		defer ticker.Stop()
 
-	for {
-		select {
-		case <-ctx.Done():
-			logger.Info("UltraFastSpammer detenido")
-			return
-		case <-ticker.C:
-			// Procesar teclas con timing controlado
-			s.processKeysUltraFast()
-			s.loopCount++
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Info("UltraFastSpammer detenido")
+				return
+			case <-ticker.C:
+				s.processKeysUltraFast()
+				s.loopCount++
+			}
+		}
+	} else {
+		// Loop ultra rápido para delays < 5ms
+		for {
+			select {
+			case <-ctx.Done():
+				logger.Info("UltraFastSpammer detenido")
+				return
+			default:
+				s.processKeysUltraFast()
+				s.loopCount++
+
+				// Busy wait para delays ultra bajos
+				if s.targetDelay > 0 {
+					s.busyWait(s.targetDelay)
+				}
+			}
 		}
 	}
 }

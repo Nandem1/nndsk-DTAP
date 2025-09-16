@@ -176,6 +176,62 @@ func (a *App) StartServices() map[string]interface{} {
 	return result
 }
 
+// PauseServices pausa todos los servicios DTAP
+func (a *App) PauseServices() map[string]interface{} {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	result := map[string]interface{}{
+		"success": false,
+		"message": "",
+	}
+
+	if !a.isRunning {
+		result["message"] = "Los servicios no están ejecutándose"
+		return result
+	}
+
+	if a.serviceManager != nil {
+		if err := a.serviceManager.Pause(); err != nil {
+			result["message"] = fmt.Sprintf("Error pausando servicios: %v", err)
+			return result
+		}
+	}
+
+	result["success"] = true
+	result["message"] = "Servicios pausados correctamente"
+
+	return result
+}
+
+// ResumeServices reanuda todos los servicios DTAP pausados
+func (a *App) ResumeServices() map[string]interface{} {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	result := map[string]interface{}{
+		"success": false,
+		"message": "",
+	}
+
+	if !a.isRunning {
+		result["message"] = "Los servicios no están ejecutándose"
+		return result
+	}
+
+	if a.serviceManager != nil {
+		if err := a.serviceManager.Resume(); err != nil {
+			result["message"] = fmt.Sprintf("Error reanudando servicios: %v", err)
+			return result
+		}
+	}
+
+	result["success"] = true
+	result["message"] = "Servicios reanudados correctamente"
+
+	return result
+}
+
 // StopServices stops all DTAP services
 func (a *App) StopServices() map[string]interface{} {
 	a.mu.Lock()
@@ -328,6 +384,7 @@ func (a *App) GetStats() map[string]interface{} {
 
 	stats := map[string]interface{}{
 		"is_running": a.isRunning,
+		"is_paused":  a.serviceManager != nil && a.serviceManager.IsPaused(),
 		"connected":  a.memClient != nil,
 	}
 
@@ -458,7 +515,16 @@ func (a *App) UpdateConfig(configJSON string) map[string]interface{} {
 
 	// Actualizar configuración en ServiceManager si está ejecutándose
 	if a.serviceManager != nil {
-		a.serviceManager.UpdateConfig(&newConfig)
+		if a.isRunning {
+			// Si los servicios están ejecutándose, actualizar en tiempo real
+			if err := a.serviceManager.UpdateConfigInRealTime(&newConfig); err != nil {
+				result["message"] = fmt.Sprintf("Error actualizando configuración en tiempo real: %v", err)
+				return result
+			}
+		} else {
+			// Si no están ejecutándose, actualizar normalmente
+			a.serviceManager.UpdateConfig(&newConfig)
+		}
 	}
 
 	result["success"] = true

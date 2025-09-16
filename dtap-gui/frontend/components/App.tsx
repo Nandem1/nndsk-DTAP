@@ -4,10 +4,13 @@ import Navigation from './Navigation'
 import Main from './Main'
 import Cheats from './Cheats'
 import Toast from './Toast'
+import { ThemeProvider } from '../contexts/ThemeContext'
 import { 
   ConnectToRO, 
   StartServices, 
   StopServices, 
+  PauseServices,
+  ResumeServices,
   GetStats, 
   GetConfig, 
   UpdateConfig 
@@ -18,6 +21,7 @@ type Route = 'main' | 'cheats'
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState<Route>('main')
   const [isRunning, setIsRunning] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
   const [autoPotEnabled, setAutoPotEnabled] = useState(true)
   const [autoBuffEnabled, setAutoBuffEnabled] = useState(false)
@@ -30,6 +34,14 @@ export default function App() {
   const [hpPotKey, setHpPotKey] = useState('F1')
   const [spPotKey, setSpPotKey] = useState('F2')
   const [spammerKeys, setSpammerKeys] = useState<string[]>(['F5', 'F6', 'F7'])
+  const [keyClickRatio, setKeyClickRatio] = useState(3)
+  const [clickDelay, setClickDelay] = useState(50)
+  const [predictionMode, setPredictionMode] = useState(true)
+  // Nuevos campos configurables
+  const [autopotDelay, setAutopotDelay] = useState(100)
+  const [autobuffDelay, setAutobuffDelay] = useState(5000)
+  const [mouseClick, setMouseClick] = useState(true)
+  const [spammerMode, setSpammerMode] = useState('ultra_fast')
   const [toast, setToast] = useState<{
     isVisible: boolean
     message: string
@@ -56,6 +68,16 @@ export default function App() {
       GoMemoryUsage: 0,
       GoroutineCount: 0,
       CPUUsage: 0
+    },
+    autopot_prediction: {
+      prediction_mode: false,
+      continuous_spam_mode: false,
+      damage_rate: 0,
+      high_damage_threshold: -15,
+      spam_remaining_time: 0,
+      spam_total_time: 5000,
+      spam_elapsed_time: 0,
+      prediction_duration: 0
     }
   })
   const [message, setMessage] = useState('')
@@ -90,9 +112,11 @@ export default function App() {
             characterName: statsData.character_name || prev.characterName,
             mapName: statsData.map_name || prev.mapName,
             jobName: statsData.job_name || prev.jobName,
-            system: statsData.system || prev.system
+            system: statsData.system || prev.system,
+            autopot_prediction: statsData.autopot_prediction || prev.autopot_prediction
           }))
           setIsRunning(statsData.is_running || false)
+          setIsPaused(statsData.is_paused || false)
         } catch (error) {
           // Error obteniendo estadísticas - silenciado
         }
@@ -110,16 +134,23 @@ export default function App() {
         setSpThreshold(config.autopot.sp_percent)
         setHpPotKey(config.autopot.hp_pot_key || 'F1')
         setSpPotKey(config.autopot.sp_pot_key || 'F2')
+        setPredictionMode(config.autopot.prediction_mode !== false) // Por defecto true
+        setAutopotDelay(config.autopot.check_delay_ms || 100)
       }
       if (config.autobuff) {
         setAutoBuffEnabled(config.autobuff.enabled)
         setGloomKey(config.autobuff.gloom_key || 'F3')
         setAspdKey(config.autobuff.aspd_key || 'F4')
+        setAutobuffDelay(config.autobuff.delay_ms || 5000)
       }
       if (config.spammer) {
         setSpammerEnabled(config.spammer.enabled)
         setSpammerDelay(config.spammer.delay)
         setSpammerKeys(config.spammer.keys || ['F5', 'F6', 'F7'])
+        setKeyClickRatio(config.spammer.key_click_ratio || 3)
+        setClickDelay(config.spammer.click_delay_ms || 50)
+        setMouseClick(config.spammer.mouse_click !== false) // Por defecto true
+        setSpammerMode(config.spammer.mode || 'ultra_fast')
       }
     } catch (error) {
       // Error cargando configuración - silenciado
@@ -142,11 +173,17 @@ export default function App() {
 
   const handleStartStop = async () => {
     try {
-      if (isRunning) {
-        const result = await StopServices()
+      if (!isRunning) {
+        // Iniciar servicios
+        const result = await StartServices()
+        setMessage(result.message)
+      } else if (isPaused) {
+        // Reanudar servicios
+        const result = await ResumeServices()
         setMessage(result.message)
       } else {
-        const result = await StartServices()
+        // Pausar servicios
+        const result = await PauseServices()
         setMessage(result.message)
       }
     } catch (error) {
@@ -163,11 +200,12 @@ export default function App() {
           sp_pot_key: spPotKey,
           hp_percent: hpThreshold,
           sp_percent: spThreshold,
-          check_delay: 100
+          check_delay_ms: autopotDelay,
+          prediction_mode: predictionMode
         },
         autobuff: {
           enabled: autoBuffEnabled,
-          delay: 5000,
+          delay_ms: autobuffDelay,
           gloom_key: gloomKey,
           aspd_key: aspdKey
         },
@@ -175,8 +213,10 @@ export default function App() {
           enabled: spammerEnabled,
           keys: spammerKeys,
           delay: spammerDelay,
-          mouse_click: true,
-          mode: "simple"
+          mouse_click: mouseClick,
+          mode: spammerMode,
+          key_click_ratio: keyClickRatio,
+          click_delay_ms: clickDelay
         },
         ui: {
           show_debug: false,
@@ -196,29 +236,31 @@ export default function App() {
   }
 
   return (
-    <div className="h-screen w-screen overflow-hidden flex flex-col">
-      {/* Navigation */}
-      <Navigation 
-        currentRoute={currentRoute} 
-        onRouteChange={setCurrentRoute} 
-      />
+    <ThemeProvider>
+      <div className="h-screen w-screen overflow-hidden flex flex-col">
+        {/* Navigation */}
+        <Navigation 
+          currentRoute={currentRoute} 
+          onRouteChange={setCurrentRoute} 
+        />
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
-        <AnimatePresence mode="wait">
-          {currentRoute === 'main' && (
-            <Main
-              key="main"
-              isRunning={isRunning}
-              isConnected={isConnected}
-              stats={stats}
-              message={message}
-              onConnect={handleConnect}
-              onStartStop={handleStartStop}
-            />
-          )}
-          
-          {currentRoute === 'cheats' && (
+        {/* Main Content */}
+        <div className="flex-1 overflow-hidden">
+          <AnimatePresence mode="wait">
+            {currentRoute === 'main' && (
+              <Main
+                key="main"
+                isRunning={isRunning}
+                isPaused={isPaused}
+                isConnected={isConnected}
+                stats={stats}
+                message={message}
+                onConnect={handleConnect}
+                onStartStop={handleStartStop}
+              />
+            )}
+            
+            {currentRoute === 'cheats' && (
             <Cheats
               key="cheats"
               autoPotEnabled={autoPotEnabled}
@@ -232,6 +274,13 @@ export default function App() {
               hpPotKey={hpPotKey}
               spPotKey={spPotKey}
               spammerKeys={spammerKeys}
+              keyClickRatio={keyClickRatio}
+              clickDelay={clickDelay}
+              predictionMode={predictionMode}
+              autopotDelay={autopotDelay}
+              autobuffDelay={autobuffDelay}
+              mouseClick={mouseClick}
+              spammerMode={spammerMode}
               onAutoPotChange={setAutoPotEnabled}
               onAutoBuffChange={setAutoBuffEnabled}
               onSpammerChange={setSpammerEnabled}
@@ -243,20 +292,28 @@ export default function App() {
               onHpPotKeyChange={setHpPotKey}
               onSpPotKeyChange={setSpPotKey}
               onSpammerKeysChange={setSpammerKeys}
+              onKeyClickRatioChange={setKeyClickRatio}
+              onClickDelayChange={setClickDelay}
+              onPredictionModeChange={setPredictionMode}
+              onAutopotDelayChange={setAutopotDelay}
+              onAutobuffDelayChange={setAutobuffDelay}
+              onMouseClickChange={setMouseClick}
+              onSpammerModeChange={setSpammerMode}
               onSaveConfig={handleConfigUpdate}
             />
-          )}
-          
-        </AnimatePresence>
+            )}
+            
+          </AnimatePresence>
+        </div>
+        
+        {/* Toast */}
+        <Toast
+          isVisible={toast.isVisible}
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
+        />
       </div>
-      
-      {/* Toast */}
-      <Toast
-        isVisible={toast.isVisible}
-        message={toast.message}
-        type={toast.type}
-        onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
-      />
-    </div>
+    </ThemeProvider>
   )
 }

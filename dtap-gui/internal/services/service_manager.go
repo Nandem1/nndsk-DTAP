@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -36,6 +37,7 @@ type ServiceManager struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	started bool
+	paused  bool // Nuevo: estado de pausa
 	mu      sync.RWMutex
 
 	// Estadísticas
@@ -171,6 +173,11 @@ func (sm *ServiceManager) Stop() error {
 
 	logger.Info("🛑 Deteniendo ServiceManager...")
 
+	// Detener scheduler primero
+	if sm.scheduler != nil {
+		sm.scheduler.Stop()
+	}
+
 	// Cancelar contexto para todos los servicios
 	sm.cancel()
 
@@ -218,6 +225,10 @@ func (sm *ServiceManager) GetStats() map[string]interface{} {
 		stats["autopot_loops"] = autopotLoops
 		stats["autopot_potions"] = autopotPots
 		stats["autopot_last_log"] = autopotTime
+
+		// Agregar información de predicción
+		predictionStatus := sm.autopotService.GetPredictionStatus()
+		stats["autopot_prediction"] = predictionStatus
 	}
 
 	if sm.autobuffService != nil {
@@ -253,9 +264,133 @@ func (sm *ServiceManager) UpdateConfig(cfg *config.Config) {
 	logger.Info("🔄 Configuración actualizada en todos los servicios")
 }
 
+// UpdateConfigInRealTime actualiza la configuración sin detener los servicios
+func (sm *ServiceManager) UpdateConfigInRealTime(cfg *config.Config) error {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	if !sm.started {
+		return fmt.Errorf("los servicios no están ejecutándose")
+	}
+
+	// Actualizar configuración
+	sm.config = cfg
+
+	// Actualizar servicios individuales
+	if sm.autopotService != nil {
+		sm.autopotService.UpdateConfig(cfg)
+	}
+
+	if sm.autobuffService != nil {
+		sm.autobuffService.UpdateConfig(cfg)
+	}
+
+	// Para el spammer, necesitamos recrearlo si cambió la configuración
+	if sm.spammerService != nil {
+		sm.spammerService = spammer.NewUltraFastSpammer(cfg, sm.windowHandle)
+	}
+
+	// Actualizar scheduler con nueva configuración
+	if sm.scheduler != nil {
+		sm.scheduler.UpdateConfig(cfg)
+	}
+
+	logger.Info("🔄 Configuración actualizada en tiempo real")
+	return nil
+}
+
+// applyCurrentConfig aplica la configuración actual a todos los servicios
+func (sm *ServiceManager) applyCurrentConfig() {
+	logger.Info("🔄 Aplicando configuración actual a todos los servicios...")
+
+	// Actualizar AutoPot
+	if sm.autopotService != nil {
+		sm.autopotService.UpdateConfig(sm.config)
+		logger.Info("✅ AutoPot configurado: enabled=%v, prediction=%v",
+			sm.config.AutoPot.Enabled, sm.config.AutoPot.PredictionMode)
+	}
+
+	// Actualizar AutoBuff
+	if sm.autobuffService != nil {
+		sm.autobuffService.UpdateConfig(sm.config)
+		logger.Info("✅ AutoBuff configurado: enabled=%v", sm.config.AutoBuff.Enabled)
+	}
+
+	// Recrear Spammer con nueva configuración
+	if sm.spammerService != nil {
+		sm.spammerService = spammer.NewUltraFastSpammer(sm.config, sm.windowHandle)
+		logger.Info("✅ Spammer recreado: enabled=%v, mode=%s, mouse_click=%v",
+			sm.config.Spammer.Enabled, sm.config.Spammer.Mode, sm.config.Spammer.MouseClick)
+	}
+
+	logger.Info("✅ Configuración aplicada correctamente")
+}
+
+// Pause pausa todos los servicios sin detenerlos completamente
+func (sm *ServiceManager) Pause() error {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	if !sm.started {
+		return nil // No hay nada que pausar
+	}
+
+	if sm.paused {
+		return nil // Ya está pausado
+	}
+
+	logger.Info("⏸️ Pausando ServiceManager...")
+
+	// Pausar scheduler
+	if sm.scheduler != nil {
+		sm.scheduler.Pause()
+	}
+
+	sm.paused = true
+	logger.Info("✅ ServiceManager pausado correctamente")
+
+	return nil
+}
+
+// Resume reanuda todos los servicios pausados
+func (sm *ServiceManager) Resume() error {
+	sm.mu.Lock()
+	defer sm.mu.Unlock()
+
+	if !sm.started {
+		return nil // No hay nada que reanudar
+	}
+
+	if !sm.paused {
+		return nil // Ya está ejecutándose
+	}
+
+	logger.Info("▶️ Reanudando ServiceManager...")
+
+	// Aplicar configuración actualizada antes de reanudar
+	sm.applyCurrentConfig()
+
+	// Reanudar scheduler
+	if sm.scheduler != nil {
+		sm.scheduler.Resume()
+	}
+
+	sm.paused = false
+	logger.Info("✅ ServiceManager reanudado correctamente")
+
+	return nil
+}
+
 // IsRunning retorna si el ServiceManager está ejecutándose
 func (sm *ServiceManager) IsRunning() bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return sm.started
+}
+
+// IsPaused retorna si el ServiceManager está pausado
+func (sm *ServiceManager) IsPaused() bool {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+	return sm.paused
 }

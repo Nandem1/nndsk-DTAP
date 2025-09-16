@@ -5,7 +5,8 @@
     "hp_percent": 90,
     "sp_percent": 40,
     "check_delay_ms": 10,
-    "enabled": true
+    "enabled": true,
+    "prediction_mode": true
   },
   "autobuff": {
     "enabled": false,
@@ -16,7 +17,9 @@
     "keys": ["F1", "F2", "F3"],
     "delay_ms": 1,
     "mouse_click": true,
-    "mode": "simple"
+    "mode": "ultra_fast",
+    "key_click_ratio": 3,
+    "click_delay_ms": 50
   },
   "ui": {
     "show_debug": false,

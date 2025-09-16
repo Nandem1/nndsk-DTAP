@@ -30,8 +30,16 @@ export function MonitorJobAddresses() {
   return window['go']['main']['App']['MonitorJobAddresses']();
 }
 
+export function PauseServices() {
+  return window['go']['main']['App']['PauseServices']();
+}
+
 export function ReloadConfig() {
   return window['go']['main']['App']['ReloadConfig']();
+}
+
+export function ResumeServices() {
+  return window['go']['main']['App']['ResumeServices']();
 }
 
 export function SearchASPDInMemory() {

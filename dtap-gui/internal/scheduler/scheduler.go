@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dtap-gui/internal/metrics"
+	"dtap-gui/pkg/config"
 	"dtap-gui/pkg/logger"
 )
 
@@ -38,6 +39,7 @@ type Scheduler struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	running bool
+	paused  bool // Nuevo: estado de pausa
 	metrics *metrics.Metrics
 
 	// Configuración
@@ -115,6 +117,32 @@ func (s *Scheduler) Start() {
 	go s.run()
 }
 
+// Pause pausa el scheduler sin detenerlo completamente
+func (s *Scheduler) Pause() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.running || s.paused {
+		return
+	}
+
+	s.paused = true
+	logger.Info("⏸️ Scheduler pausado")
+}
+
+// Resume reanuda el scheduler pausado
+func (s *Scheduler) Resume() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if !s.running || !s.paused {
+		return
+	}
+
+	s.paused = false
+	logger.Info("▶️ Scheduler reanudado")
+}
+
 // Stop detiene el scheduler
 func (s *Scheduler) Stop() {
 	s.mu.Lock()
@@ -123,10 +151,37 @@ func (s *Scheduler) Stop() {
 		return
 	}
 	s.running = false
+	s.paused = false
 	s.mu.Unlock()
 
 	s.cancel()
+
+	// Crear nuevo contexto para permitir reinicio
+	s.ctx, s.cancel = context.WithCancel(context.Background())
+
 	logger.Info("🛑 Scheduler detenido")
+}
+
+// UpdateConfig actualiza la configuración del scheduler
+func (s *Scheduler) UpdateConfig(cfg *config.Config) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Actualizar tareas según la nueva configuración
+	if autopotTask, exists := s.tasks["autopot"]; exists {
+		autopotTask.Enabled = cfg.AutoPot.Enabled
+	}
+
+	if autobuffTask, exists := s.tasks["autobuff"]; exists {
+		autobuffTask.Enabled = cfg.AutoBuff.Enabled
+	}
+
+	if spammerTask, exists := s.tasks["spammer"]; exists {
+		spammerTask.Enabled = cfg.Spammer.Enabled
+	}
+
+	logger.Info("🔄 Scheduler configurado: autopot=%v, autobuff=%v, spammer=%v",
+		cfg.AutoPot.Enabled, cfg.AutoBuff.Enabled, cfg.Spammer.Enabled)
 }
 
 // run es el loop principal del scheduler
@@ -139,7 +194,14 @@ func (s *Scheduler) run() {
 		case <-s.ctx.Done():
 			return
 		case <-ticker.C:
-			s.processTasks()
+			// Verificar si está pausado
+			s.mu.RLock()
+			paused := s.paused
+			s.mu.RUnlock()
+
+			if !paused {
+				s.processTasks()
+			}
 		}
 	}
 }

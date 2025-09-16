@@ -22,6 +22,16 @@ interface CheatsProps {
   hpPotKey: string
   spPotKey: string
   spammerKeys: string[]
+  // Nuevas props para control de ratio teclas/clicks
+  keyClickRatio: number
+  clickDelay: number
+  // Nueva prop para predicción
+  predictionMode: boolean
+  // Nuevos campos configurables
+  autopotDelay: number
+  autobuffDelay: number
+  mouseClick: boolean
+  spammerMode: string
   onAutoPotChange: (enabled: boolean) => void
   onAutoBuffChange: (enabled: boolean) => void
   onSpammerChange: (enabled: boolean) => void
@@ -33,6 +43,13 @@ interface CheatsProps {
   onHpPotKeyChange: (key: string) => void
   onSpPotKeyChange: (key: string) => void
   onSpammerKeysChange: (keys: string[]) => void
+  onKeyClickRatioChange: (ratio: number) => void
+  onClickDelayChange: (delay: number) => void
+  onPredictionModeChange: (enabled: boolean) => void
+  onAutopotDelayChange: (delay: number) => void
+  onAutobuffDelayChange: (delay: number) => void
+  onMouseClickChange: (enabled: boolean) => void
+  onSpammerModeChange: (mode: string) => void
   onSaveConfig: () => void
 }
 
@@ -48,6 +65,13 @@ export default function Cheats({
   hpPotKey,
   spPotKey,
   spammerKeys,
+  keyClickRatio,
+  clickDelay,
+  predictionMode,
+  autopotDelay,
+  autobuffDelay,
+  mouseClick,
+  spammerMode,
   onAutoPotChange,
   onAutoBuffChange,
   onSpammerChange,
@@ -59,6 +83,13 @@ export default function Cheats({
   onHpPotKeyChange,
   onSpPotKeyChange,
   onSpammerKeysChange,
+  onKeyClickRatioChange,
+  onClickDelayChange,
+  onPredictionModeChange,
+  onAutopotDelayChange,
+  onAutobuffDelayChange,
+  onMouseClickChange,
+  onSpammerModeChange,
   onSaveConfig
 }: CheatsProps) {
   return (
@@ -69,24 +100,18 @@ export default function Cheats({
       transition={{ duration: 0.3 }}
       className="h-full flex flex-col"
     >
-      <div className="flex-1 p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Cheats</h1>
-          <p className="text-muted-foreground">Configure your automation settings</p>
-        </div>
-
+      <div className="flex-1 p-4 space-y-4">
         {/* Cheats Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {/* Auto Pot */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-500" />
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Zap className="h-4 w-4 text-yellow-500" />
                 Auto Pot
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Enable Auto Pot</Label>
                 <Switch
@@ -95,55 +120,75 @@ export default function Cheats({
                 />
               </div>
               
-              <div className="space-y-3">
+              <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm">HP Threshold (%)</Label>
+                  <Label>AutoPot Predictivo</Label>
+                  <p className="text-xs text-muted-foreground">Predice daño y spamea por 5 segundos</p>
+                </div>
+                <Switch
+                  checked={predictionMode}
+                  onCheckedChange={onPredictionModeChange}
+                  disabled={!autoPotEnabled}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs">HP Threshold (%)</Label>
                   <input
                     type="number"
                     value={hpThreshold}
                     onChange={(e) => onHpThresholdChange(Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
                     min="1"
                     max="100"
                   />
                 </div>
                 
                 <div>
-                  <Label className="text-sm">SP Threshold (%)</Label>
+                  <Label className="text-xs">SP Threshold (%)</Label>
                   <input
                     type="number"
                     value={spThreshold}
                     onChange={(e) => onSpThresholdChange(Number(e.target.value))}
-                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
                     min="1"
                     max="100"
                   />
                 </div>
                 
                 <div>
-                  <Label className="text-sm">HP Pot Key</Label>
+                  <Label className="text-xs">HP Pot Key</Label>
                   <input
                     type="text"
                     value={hpPotKey}
                     onChange={(e) => onHpPotKeyChange(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
                     placeholder="F1"
                   />
                 </div>
                 
                 <div>
-                  <Label className="text-sm">SP Pot Key</Label>
+                  <Label className="text-xs">SP Pot Key</Label>
                   <input
                     type="text"
                     value={spPotKey}
                     onChange={(e) => onSpPotKeyChange(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
                     placeholder="F2"
                   />
                 </div>
                 
-                <div className="text-sm text-muted-foreground">
-                  Check Delay: 100ms (hardcoded)
+                <div>
+                  <Label className="text-xs">Check Delay (ms)</Label>
+                  <input
+                    type="number"
+                    value={autopotDelay}
+                    onChange={(e) => onAutopotDelayChange(Number(e.target.value))}
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
+                    min="1"
+                    max="1000"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -152,12 +197,12 @@ export default function Cheats({
           {/* Auto Buff */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-500" />
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Shield className="h-4 w-4 text-blue-500" />
                 Auto Buff
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Enable Auto Buff</Label>
                 <Switch
@@ -166,31 +211,39 @@ export default function Cheats({
                 />
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div>
-                  <Label className="text-sm">Gloom Key</Label>
+                  <Label className="text-xs">Gloom Key</Label>
                   <input
                     type="text"
                     value={gloomKey}
                     onChange={(e) => onGloomKeyChange(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
                     placeholder="F3"
                   />
                 </div>
                 
                 <div>
-                  <Label className="text-sm">ASPD Key</Label>
+                  <Label className="text-xs">ASPD Key</Label>
                   <input
                     type="text"
                     value={aspdKey}
                     onChange={(e) => onAspdKeyChange(e.target.value)}
-                    className="w-full mt-1 px-3 py-2 bg-background border border-border rounded-md text-sm"
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
                     placeholder="F4"
                   />
                 </div>
                 
-                <div className="text-sm text-muted-foreground">
-                  Delay: 5000ms (hardcoded)
+                <div>
+                  <Label className="text-xs">Buff Delay (ms)</Label>
+                  <input
+                    type="number"
+                    value={autobuffDelay}
+                    onChange={(e) => onAutobuffDelayChange(Number(e.target.value))}
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
+                    min="1000"
+                    max="30000"
+                  />
                 </div>
               </div>
             </CardContent>
@@ -199,12 +252,12 @@ export default function Cheats({
           {/* Spammer */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-red-500" />
+              <CardTitle className="flex items-center gap-2 text-sm">
+                <Target className="h-4 w-4 text-red-500" />
                 Spammer
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label>Enable Spammer</Label>
                 <Switch
@@ -236,11 +289,76 @@ export default function Cheats({
                   placeholder="F5, F6, F7"
                 />
               </div>
+              
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="text-sm font-medium text-foreground">Click Control</div>
+                
+                <div>
+                  <Label className="text-xs">Key/Click Ratio</Label>
+                  <input
+                    type="number"
+                    value={keyClickRatio}
+                    onChange={(e) => onKeyClickRatioChange(Number(e.target.value))}
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
+                    min="1"
+                    max="10"
+                    placeholder="3"
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {keyClickRatio} tecla(s) por 1 click
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Click Delay (ms)</Label>
+                  <input
+                    type="number"
+                    value={clickDelay}
+                    onChange={(e) => onClickDelayChange(Number(e.target.value))}
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
+                    min="0"
+                    max="1000"
+                    placeholder="50"
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Delay adicional entre clicks
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-xs">Mouse Click</Label>
+                    <div className="text-xs text-muted-foreground">Habilitar clicks del mouse</div>
+                  </div>
+                  <Switch
+                    checked={mouseClick}
+                    onCheckedChange={onMouseClickChange}
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-xs">Spammer Mode</Label>
+                  <select
+                    value={spammerMode}
+                    onChange={(e) => onSpammerModeChange(e.target.value)}
+                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
+                    disabled
+                  >
+                    <option value="ultra_fast">Ultra Fast</option>
+                  </select>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Único modo disponible
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Save Button */}
+      </div>
+      
+      {/* Fixed Save Button */}
+      <div className="border-t bg-background p-4">
         <div className="flex justify-end">
           <Button onClick={onSaveConfig} className="px-6">
             <Save className="h-4 w-4 mr-2" />

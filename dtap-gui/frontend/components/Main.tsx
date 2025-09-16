@@ -17,6 +17,7 @@ import {
 
 interface MainProps {
   isRunning: boolean
+  isPaused: boolean
   isConnected: boolean
   stats: {
     hp: number
@@ -36,6 +37,16 @@ interface MainProps {
       GoroutineCount: number
       CPUUsage: number
     }
+    autopot_prediction?: {
+      prediction_mode: boolean
+      continuous_spam_mode: boolean
+      damage_rate: number
+      high_damage_threshold: number
+      spam_remaining_time: number
+      spam_total_time: number
+      spam_elapsed_time: number
+      prediction_duration: number
+    }
   }
   message: string
   onConnect: () => void
@@ -44,6 +55,7 @@ interface MainProps {
 
 export default function Main({
   isRunning,
+  isPaused,
   isConnected,
   stats,
   message,
@@ -191,26 +203,83 @@ export default function Main({
                 </div>
               </div>
 
+              {/* AutoPot Prediction Status */}
+              {stats.autopot_prediction && (
+                <div className="pt-4 border-t border-border">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">AutoPot Status</span>
+                      <div className="flex items-center gap-2">
+                        {stats.autopot_prediction.continuous_spam_mode ? (
+                          <motion.div
+                            className="flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 rounded-md text-xs"
+                            animate={{ opacity: [1, 0.5, 1] }}
+                            transition={{ duration: 1, repeat: Infinity }}
+                          >
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            SPAM CONTINUO
+                          </motion.div>
+                        ) : stats.autopot_prediction.prediction_mode ? (
+                          <motion.div
+                            className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-400 rounded-md text-xs"
+                            animate={{ opacity: [1, 0.7, 1] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            PREDICCIÓN
+                          </motion.div>
+                        ) : (
+                          <div className="flex items-center gap-1 px-2 py-1 bg-gray-500/20 text-gray-400 rounded-md text-xs">
+                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                            NORMAL
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {stats.autopot_prediction.continuous_spam_mode && (
+                      <div className="text-xs text-muted-foreground">
+                        <div>Daño: {stats.autopot_prediction.damage_rate.toFixed(1)}%/seg</div>
+                        <div>Tiempo restante: {(stats.autopot_prediction.spam_remaining_time / 1000).toFixed(1)}s</div>
+                      </div>
+                    )}
+                    
+                    {stats.autopot_prediction.prediction_mode && !stats.autopot_prediction.continuous_spam_mode && (
+                      <div className="text-xs text-muted-foreground">
+                        <div>Predicción activa: {(stats.autopot_prediction.prediction_duration / 1000).toFixed(1)}s</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Main Control */}
               <div className="pt-4 space-y-2">
                 <Button
                   onClick={onStartStop}
                   disabled={!isConnected}
                   className={`w-full h-12 ${
-                    isRunning 
-                      ? 'bg-red-600 hover:bg-red-700' 
-                      : 'bg-green-600 hover:bg-green-700'
+                    !isRunning 
+                      ? 'bg-green-600 hover:bg-green-700' 
+                      : isPaused
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-orange-600 hover:bg-orange-700'
                   }`}
                 >
-                  {isRunning ? (
-                    <>
-                      <Pause className="h-4 w-4 mr-2" />
-                      Stop Services
-                    </>
-                  ) : (
+                  {!isRunning ? (
                     <>
                       <Play className="h-4 w-4 mr-2" />
                       Start Services
+                    </>
+                  ) : isPaused ? (
+                    <>
+                      <Play className="h-4 w-4 mr-2" />
+                      Resume Services
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="h-4 w-4 mr-2" />
+                      Pause Services
                     </>
                   )}
                 </Button>

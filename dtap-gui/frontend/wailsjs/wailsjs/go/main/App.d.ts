@@ -15,7 +15,11 @@ export function MonitorASPDAddresses():Promise<Record<string, any>>;
 
 export function MonitorJobAddresses():Promise<Record<string, any>>;
 
+export function PauseServices():Promise<Record<string, any>>;
+
 export function ReloadConfig():Promise<Record<string, any>>;
+
+export function ResumeServices():Promise<Record<string, any>>;
 
 export function SearchASPDInMemory():Promise<Record<string, any>>;
 

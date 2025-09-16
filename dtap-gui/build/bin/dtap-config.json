@@ -4,24 +4,29 @@
     "sp_pot_key": "F8",
     "hp_percent": 99,
     "sp_percent": 40,
-    "check_delay_ms": 0,
-    "enabled": true
+    "check_delay_ms": 100,
+    "enabled": true,
+    "prediction_mode": true
   },
   "autobuff": {
     "enabled": true,
-    "delay_ms": 0,
-    "gloom_key": "",
+    "delay_ms": 5000,
+    "gloom_key": "R",
     "aspd_key": "W"
   },
   "spammer": {
     "enabled": true,
     "keys": [
       "F1",
-      "F2"
+      "F2",
+      "F3",
+      "F4"
     ],
     "delay_ms": 0,
     "mouse_click": true,
-    "mode": "simple"
+    "mode": "simple",
+    "key_click_ratio": 3,
+    "click_delay_ms": 20
   },
   "ui": {
     "show_debug": false,

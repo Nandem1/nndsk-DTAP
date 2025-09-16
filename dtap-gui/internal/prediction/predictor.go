@@ -95,6 +95,33 @@ func (rb *RingBuffer) GetCount() int {
 	return rb.count
 }
 
+// GetHistoryByDuration retorna los puntos de datos dentro de una duración específica
+func (rb *RingBuffer) GetHistoryByDuration(duration time.Duration) []DataPoint {
+	rb.mu.RLock()
+	defer rb.mu.RUnlock()
+
+	if rb.count == 0 {
+		return nil
+	}
+
+	cutoffTime := time.Now().Add(-duration)
+	var result []DataPoint
+
+	// Iterar desde el más reciente hacia atrás
+	for i := 0; i < rb.count; i++ {
+		index := (rb.tail - 1 - i + rb.capacity) % rb.capacity
+		point := rb.data[index]
+
+		if point.Timestamp.Before(cutoffTime) {
+			break
+		}
+
+		result = append([]DataPoint{point}, result...) // Prepend para mantener orden cronológico
+	}
+
+	return result
+}
+
 // Predictor maneja la predicción de valores basada en historial
 type Predictor struct {
 	hpHistory *RingBuffer
@@ -267,6 +294,20 @@ func (p *Predictor) GetSPStats() map[string]interface{} {
 	}
 
 	return stats
+}
+
+// GetHPHistoryByDuration retorna el historial de HP dentro de una duración específica
+func (p *Predictor) GetHPHistoryByDuration(duration time.Duration) []DataPoint {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.hpHistory.GetHistoryByDuration(duration)
+}
+
+// GetSPHistoryByDuration retorna el historial de SP dentro de una duración específica
+func (p *Predictor) GetSPHistoryByDuration(duration time.Duration) []DataPoint {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.spHistory.GetHistoryByDuration(duration)
 }
 
 // Clear limpia todos los datos históricos
