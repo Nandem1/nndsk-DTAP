@@ -1,253 +1,136 @@
 # DTAP - Ragnarok Online Assistant
 
-Un asistente avanzado para Ragnarok Online con **sistema de predicción inteligente** y optimizaciones de rendimiento de nivel profesional.
+Un asistente moderno para Ragnarok Online con **sistema de predicción inteligente** y interfaz gráfica intuitiva.
 
-## 🚀 Características Principales
+## 🙏 Créditos y Proyectos Base
 
-### 🧠 Sistema de Predicción Inteligente
-- **High Ping Mode Inteligente**: Anticipa el daño 200ms antes usando regresión lineal
-- **Ring Buffer Optimizado**: Almacena y analiza los últimos 20 puntos de datos
-- **Predicción Adaptativa**: Se ajusta automáticamente a los patrones de daño
-- **Tracking de Tiempo**: Muestra cuánto tiempo spamea HP pots por predicción
+Este proyecto ha tomado inspiración y código base de los siguientes proyectos de la comunidad:
 
-### ⚡ Optimizaciones de Rendimiento
-- **Scheduler Centralizado**: Gestión de prioridades (Critical/High/Normal/Low)
-- **Input Dispatcher**: Serialización de eventos de input para evitar conflictos
-- **timeBeginPeriod(1)**: Optimización de resolución de timer de Windows
-- **Métricas en Tiempo Real**: Sistema de monitoreo con pprof integrado
-- **Tickers Optimizados**: Reemplazo de time.Sleep por time.Ticker eficiente
+- **[k1ngJ/dtAP](https://github.com/k1ngJ/dtAP)** - Proyecto original en C# que sirvió como base fundamental
+- **[SmookyzX/SmookyzAP](https://github.com/SmookyzX/SmookyzAP)** - Autopotion avanzado con High Ping Mode
+- **[4RTools/4RTools](https://github.com/4RTools/4RTools)** - Suite completa de herramientas para Ragnarok Online
 
-### 🎮 Funcionalidades Core
-- **UltraFast AutoPot**: Autopot con predicción de daño (15ms interval)
-- **UltraFast Spammer**: Spammer optimizado (10ms interval) 
-- **UltraFast AutoBuff**: Sistema de buffs inteligente (250ms interval)
-- **Sistema de Logs Avanzado**: Tracking detallado de predicción y rendimiento
+Agradecemos a todos los desarrolladores de la comunidad por su trabajo y contribuciones al ecosistema de herramientas para Ragnarok Online.
+
+## 🚀 Características
+
+- **🧠 Predicción Inteligente**: Anticipa el daño 200ms antes usando regresión lineal
+- **⚡ AutoPot Ultra Rápido**: Autopot con predicción de daño (15ms interval)
+- **🎮 Spammer Optimizado**: Spammer de alta velocidad (10ms interval)
+- **🔄 AutoBuff Inteligente**: Sistema de buffs automático (250ms interval)
+- **🖥️ Interfaz Moderna**: GUI React/TypeScript con configuración visual
+- **📊 Monitoreo en Vivo**: Estadísticas actualizadas a 60 FPS
+- **🎨 Temas Personalizables**: Múltiples temas con transparencia
+- **⚙️ Configuración en Tiempo Real**: Ajustes sin reiniciar
 
 ## 📁 Estructura del Proyecto
 
 ```
-dtap-go/
-├── cmd/                    # Puntos de entrada
-│   ├── dtap/              # Versión terminal
-│   │   └── main.go
-│   └── dtap-gui/          # Versión GUI (Wails)
-│       └── main.go
-├── internal/              # Código interno optimizado
-│   ├── normal/           # Módulos principales
-│   │   ├── autopot/      # UltraFast AutoPot con predicción
-│   │   ├── spammer/      # UltraFast Spammer optimizado
-│   │   └── autobuff/     # UltraFast AutoBuff inteligente
-│   ├── input/            # Dispatcher centralizado de input
-│   ├── memory/           # Sistema de memoria optimizado
-│   ├── scheduler/        # Scheduler con prioridades
-│   ├── prediction/       # Sistema de predicción con ring buffer
-│   ├── metrics/          # Sistema de métricas y pprof
-│   ├── timing/           # Optimizador de timing (timeBeginPeriod)
-│   ├── process/          # Gestión de procesos
-│   └── services/         # Service Manager centralizado
-├── pkg/                  # Código compartido
-│   ├── config/           # Configuración con métricas y timing
-│   ├── constants/        # Constantes del sistema
-│   └── logger/           # Sistema de logging avanzado
-├── configs/              # Archivos de configuración
-│   └── dtap-config.json
-├── dtap-gui/             # Versión GUI completa
-│   ├── frontend/         # Interfaz React/TypeScript
-│   ├── internal/         # Módulos optimizados (mismo que terminal)
-│   └── build/            # Archivos de build
-└── cmd/                  # Herramientas de análisis
-    ├── analyze_character/
-    ├── find_character/
-    ├── find_aspd/
-    └── inspect_character/
+dtap-gui/
+├── frontend/             # Interfaz React/TypeScript
+│   ├── components/       # Componentes de la UI
+│   ├── contexts/         # Contextos de React
+│   ├── styles/           # Estilos CSS
+│   └── pages/            # Páginas principales
+├── internal/             # Lógica del backend
+│   ├── autopot/          # Sistema de autopot
+│   ├── spammer/          # Sistema de spammer
+│   ├── autobuff/         # Sistema de autobuff
+│   ├── memory/           # Acceso a memoria
+│   ├── prediction/       # Sistema de predicción
+│   └── services/         # Gestión de servicios
+├── build/                # Archivos de build
+└── main.go               # Punto de entrada
 ```
 
-## 🛠️ Compilación
+## 🛠️ Instalación
 
-### Versión Terminal (Recomendada para Testing)
+### Prerrequisitos
+- **Go 1.21+**
+- **Node.js 16+**
+- **Wails v2**
+- **Windows 10/11**
 
+### Instalación
 ```bash
-# Compilar versión terminal
-go build -o dtap.exe cmd/dtap/main.go
-
-# Ejecutar
-./dtap.exe
-```
-
-### Versión GUI (Wails)
-
-```bash
-# Instalar Wails CLI (si no está instalado)
+# Instalar Wails
 go install github.com/wailsapp/wails/v2/cmd/wails@latest
 
-# Compilar versión GUI
+# Clonar el repositorio
+git clone <tu-repo>
 cd dtap-gui
+
+# Instalar dependencias
+npm install
+
+# Compilar
 wails build
 
-# Ejecutar en modo desarrollo
+# Ejecutar en desarrollo
 wails dev
 ```
 
-### Herramientas de Análisis
-
-```bash
-# Compilar herramientas de análisis
-go build -o analyze_character.exe cmd/analyze_character/main.go
-go build -o find_character.exe cmd/find_character/main.go
-go build -o find_aspd.exe cmd/find_aspd/main.go
-go build -o inspect_character.exe cmd/inspect_character/main.go
-```
 
 ## 🎮 Uso
 
-### Versión Terminal
-```bash
-./dtap.exe
-```
+1. **Ejecutar la aplicación**
+   ```bash
+   wails dev
+   ```
 
-**Comandos disponibles:**
-- `aspd` - Buscar ASPD en memoria
-- `monitor` - Monitorear direcciones ASPD
-- `debug` - Debug detallado de ASPD
-- `stats` - Mostrar estadísticas
-- `metrics` - Habilitar/deshabilitar métricas
-- `timing` - Habilitar/deshabilitar optimización de timing
-- `benchmark` - Benchmark de precisión de timing
-- `predictor` - Mostrar estadísticas del predictor
-- `quit` - Salir
+2. **Conectar a Ragnarok Online**
+   - Asegúrate de que RO esté ejecutándose
+   - Haz clic en "Conectar" en la GUI
 
-### Versión GUI
-```bash
-# Ejecutar desde dtap-gui/
-wails dev
-```
+3. **Configurar servicios**
+   - **AutoPot**: Configura teclas y porcentajes de HP/SP
+   - **Spammer**: Configura teclas y delay
+   - **AutoBuff**: Configura buffs automáticos
+
+4. **Iniciar servicios**
+   - Haz clic en "Iniciar" para activar los servicios
+   - Los servicios se ejecutarán automáticamente
 
 ## ⚙️ Configuración
 
-### Archivo Principal
-- **Archivo**: `configs/dtap-config.json`
-- **Configuración**: Autopot, Spammer, AutoBuff, Métricas y Timing
+La configuración se realiza directamente desde la interfaz gráfica:
 
-### Configuración de Predicción
-```json
-{
-  "autopot": {
-    "hp_percent": 99,
-    "sp_percent": 30,
-    "enabled": true
-  },
-  "metrics": {
-    "enabled": true,
-    "port": 6060
-  },
-  "timing": {
-    "enabled": true
-  }
-}
-```
+- **AutoPot**: Configura teclas de HP/SP y porcentajes
+- **Spammer**: Configura teclas, delay y modo
+- **AutoBuff**: Configura buffs y delays
+- **Temas**: Cambia entre temas claro/oscuro
+- **Transparencia**: Ajusta la transparencia de la ventana
 
-## 🔧 Herramientas de Análisis
+Todos los cambios se aplican en tiempo real sin necesidad de reiniciar.
 
-```bash
-# Analizar personaje
-./analyze_character.exe
 
-# Encontrar personaje
-./find_character.exe
+## 📊 Características Técnicas
 
-# Encontrar ASPD
-./find_aspd.exe
-
-# Inspeccionar personaje
-./inspect_character.exe
-```
-
-## 📊 Rendimiento y Métricas
-
-### 🚀 Optimizaciones Implementadas
-- **Scheduler Centralizado**: Gestión de prioridades con 1ms de precisión
-- **Input Dispatcher**: Serialización de eventos para evitar conflictos
-- **timeBeginPeriod(1)**: Resolución de timer optimizada a 1ms
-- **Ring Buffer**: Almacenamiento eficiente de datos históricos
-- **Tickers Optimizados**: Reemplazo de time.Sleep por time.Ticker
-
-### 📈 Métricas de Rendimiento
-- **AutoPot**: 15ms interval con predicción de 200ms
-- **Spammer**: 10ms interval optimizado
-- **AutoBuff**: 250ms interval con ajuste dinámico
-- **Métricas**: Sistema completo con pprof integrado
-- **Memoria**: Lectura optimizada con cache inteligente
-
-### 🧠 Sistema de Predicción
-- **Algoritmo**: Regresión lineal con ring buffer
-- **Precisión**: Predicción de 200ms con 95%+ de precisión
-- **Adaptabilidad**: Se ajusta automáticamente a patrones de daño
-- **Tracking**: Monitoreo en tiempo real de duración de predicción
+- **Predicción de Daño**: Anticipa el daño 200ms antes usando regresión lineal
+- **Alto Rendimiento**: AutoPot a 15ms, Spammer a 10ms, AutoBuff a 250ms
+- **Optimizaciones de Sistema**: timeBeginPeriod(1) para máxima precisión
+- **Interfaz Fluida**: Actualizaciones a 60 FPS sin lag
+- **Acceso a Memoria**: Lectura directa de HP/SP del proceso de RO
 
 ## 🚨 Requisitos
 
-- **Sistema Operativo**: Windows 10/11
-- **Juego**: Ragnarok Online ejecutándose
-- **Permisos**: Administrador (para acceso a memoria)
-- **Go**: Versión 1.19+ (para compilación)
-- **Wails**: v2.x (para versión GUI)
-
-## 📝 Características Avanzadas
-
-### 🧠 Sistema de Logs de Predicción
-- **Logs Detallados**: Muestra cuándo usa predicción vs HP actual
-- **Tracking de Tiempo**: "Spameando desde hace Xms"
-- **Métricas de Éxito**: Duraciones de 200ms+ indican funcionamiento perfecto
-- **Debugging**: Fácil identificación de problemas
-
-### ⚡ Optimizaciones de Sistema
-- **timeBeginPeriod(1)**: Mejora la precisión de timers en Windows
-- **Scheduler con Prioridades**: AutoPot (Critical), Spammer (High), AutoBuff (Normal)
-- **Input Dispatcher**: Evita conflictos entre eventos de teclado/mouse
-- **Métricas pprof**: Profiling completo del rendimiento
-
-### 🎯 Comparación con C# High Ping Mode
-- **C# High Ping Mode**: Spamea constantemente (bruto)
-- **Nuestro Sistema**: Spamea solo cuando predice daño (inteligente)
-- **Ventaja**: Misma efectividad con menor uso de recursos
-
-## 🎮 Ejemplo de Uso
-
-### Logs de Predicción en Acción
-```
-[23:14:30] INFO: 🧠 HP Pot PREDICCIÓN: HP actual=97%, predicho=87.4% en 200ms (threshold=99%) - Spameando desde hace 0ms
-[23:14:30] INFO: 🧠 HP Pot PREDICCIÓN: HP actual=97%, predicho=87.3% en 200ms (threshold=99%) - Spameando desde hace 15ms
-[23:14:30] INFO: 🧠 HP Pot PREDICCIÓN: HP actual=97%, predicho=87.6% en 200ms (threshold=99%) - Spameando desde hace 30ms
-[23:14:30] INFO: ✅ Predicción terminada: Duró 250ms spameando HP pots
-```
-
-### Comandos de Monitoreo
-```bash
-# Ver estadísticas del predictor
-predictor
-
-# Habilitar métricas
-metrics
-
-# Benchmark de timing
-benchmark
-
-# Ver estadísticas generales
-stats
-```
+- **Windows 10/11** (64-bit)
+- **Ragnarok Online** ejecutándose
+- **Permisos de administrador** (para acceso a memoria)
+- **Go 1.21+** y **Node.js 16+** (para compilación)
 
 ## 🤝 Contribución
 
 1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
+2. Crea una rama para tu feature
+3. Commit tus cambios
+4. Push a la rama
 5. Abre un Pull Request
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para detalles.
+Este proyecto está bajo la Licencia MIT.
 
 ---
 
-**DTAP** - *Ragnarok Online Assistant con Sistema de Predicción Inteligente* 🚀
+**DTAP** - *Ragnarok Online Assistant* 🚀
