@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useTransparency } from '../contexts/TransparencyContext'
+import { ThemeDecorations } from './themed-icons'
 import { 
   Settings, 
   Monitor,
@@ -37,7 +38,8 @@ export default function Config({ onSaveConfig }: ConfigProps) {
         {/* Config Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Display Settings */}
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <ThemeDecorations isActive={true} position="top-right" />
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Monitor className="h-5 w-5" />

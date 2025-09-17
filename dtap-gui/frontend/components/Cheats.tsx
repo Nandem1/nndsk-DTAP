@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useTransparency } from '../contexts/TransparencyContext'
+import { CardDecorations } from './themed-icons'
 import { 
   Zap, 
   Shield, 
@@ -107,9 +108,10 @@ export default function Cheats({
         {/* Cheats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {/* Auto Pot */}
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <CardDecorations isActive={autoPotEnabled} />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm pr-16">
                 <Zap className="h-4 w-4 text-warning" />
                 Auto Pot
               </CardTitle>
@@ -126,7 +128,7 @@ export default function Cheats({
               <div className="flex items-center justify-between">
                 <div>
                   <Label>AutoPot Predictivo</Label>
-                  <p className="text-xs text-muted-foreground">Predice daño y spamea por 5 segundos</p>
+                  <p className="text-xs text-muted-foreground">Predice daño y spamea por 2 segundos</p>
                 </div>
                 <Switch
                   checked={predictionMode}
@@ -198,9 +200,10 @@ export default function Cheats({
           </Card>
 
           {/* Auto Buff */}
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <CardDecorations isActive={autoBuffEnabled} />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm pr-16">
                 <Shield className="h-4 w-4 text-info" />
                 Auto Buff
               </CardTitle>
@@ -253,9 +256,10 @@ export default function Cheats({
           </Card>
 
           {/* Spammer */}
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <CardDecorations isActive={spammerEnabled} />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm pr-16">
                 <Target className="h-4 w-4 text-error" />
                 Spammer
               </CardTitle>

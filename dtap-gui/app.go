@@ -437,7 +437,18 @@ func (a *App) GetStats() map[string]interface{} {
 
 	if a.systemMonitor != nil {
 		systemStats := a.systemMonitor.GetSystemStats()
-		stats["system"] = systemStats
+		stats["system"] = map[string]interface{}{
+			"MemoryUsage":        systemStats.MemoryUsage,
+			"MemoryTotal":        systemStats.MemoryTotal,
+			"MemoryPercent":      systemStats.MemoryPercent,
+			"GoMemoryUsage":      systemStats.GoMemoryUsage,
+			"GoMemoryTotal":      systemStats.GoMemoryTotal,
+			"GoMemoryPercent":    systemStats.GoMemoryPercent,
+			"ProcessMemoryUsage": systemStats.ProcessMemoryUsage,
+			"ProcessCPUUsage":    systemStats.ProcessCPUUsage,
+			"GoroutineCount":     systemStats.GoroutineCount,
+			"CPUUsage":           systemStats.CPUUsage,
+		}
 		stats["uptime"] = a.systemMonitor.GetUptime().Seconds()
 	}
 

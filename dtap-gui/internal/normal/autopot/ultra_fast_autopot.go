@@ -51,7 +51,7 @@ type UltraFastAutoPot struct {
 	// Sistema de spam continuo por daño alto
 	continuousSpamMode     bool          // Si está en modo spam continuo
 	continuousSpamStart    time.Time     // Cuando empezó el spam continuo
-	continuousSpamDuration time.Duration // Duración del spam continuo (5 segundos)
+	continuousSpamDuration time.Duration // Duración del spam continuo (2 segundos)
 	highDamageThreshold    float64       // Umbral de daño alto (ej: -20% por segundo)
 }
 
@@ -81,8 +81,8 @@ func NewUltraFastAutoPot(cfg *config.Config, memClient *memory.Client, windowHan
 		damageRate:     0.0,
 		// Inicializar sistema de spam continuo
 		continuousSpamMode:     false,
-		continuousSpamDuration: 5 * time.Second, // 5 segundos de spam continuo
-		highDamageThreshold:    -15.0,           // -15% HP por segundo = daño alto
+		continuousSpamDuration: 2 * time.Second, // 2 segundos de spam continuo
+		highDamageThreshold:    -25.0,           // -25% HP por segundo = daño alto (menos agresivo)
 	}
 }
 
@@ -165,7 +165,7 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 	if s.continuousSpamMode {
 		timeInSpam := now.Sub(s.continuousSpamStart)
 		if timeInSpam < s.continuousSpamDuration {
-			// Seguir spameando por 5 segundos sin importar el HP
+			// Seguir spameando por 2 segundos sin importar el HP
 			shouldUseHPPot = true
 			usedContinuousSpam = true
 		} else {
@@ -177,12 +177,12 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 		// Solo usar predicción si está habilitada en la configuración
 		// Detectar daño alto y activar spam continuo
 		if damageRate < s.highDamageThreshold {
-			// Daño alto detectado, activar spam continuo por 5 segundos
+			// Daño alto detectado, activar spam continuo por 2 segundos
 			s.continuousSpamMode = true
 			s.continuousSpamStart = now
 			shouldUseHPPot = true
 			usedContinuousSpam = true
-			logger.Info("🚨 DAÑO ALTO DETECTADO: %.1f%%/seg - Activando spam continuo por 5 segundos", damageRate)
+			logger.Info("🚨 DAÑO ALTO DETECTADO: %.1f%%/seg - Activando spam continuo por 2 segundos", damageRate)
 		} else {
 			// Predicción normal
 			predictionTriggered := predictedHP < float64(s.config.AutoPot.HPPercent)
@@ -235,8 +235,17 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 	// Auto pot SP con predicción - ultra rápido
 	shouldUseSPPot := spPercent < s.config.AutoPot.SPPercent
 	usedSPPrediction := false
+	usedSPContinuousSpam := false
 
-	if spPredictionValid {
+	// Verificar si estamos en modo spam continuo para SP también
+	if s.continuousSpamMode {
+		// Durante spam continuo, también spamear SP si está por debajo del threshold
+		// (sin predicción, solo lógica normal)
+		if spPercent < s.config.AutoPot.SPPercent {
+			shouldUseSPPot = true
+			usedSPContinuousSpam = true
+		}
+	} else if spPredictionValid {
 		spPredictionTriggered := predictedSP < float64(s.config.AutoPot.SPPercent)
 		// Usar predicción si predice que bajará por debajo del threshold
 		// Esto permite spamear SP pots aunque esté al 100% (como High Ping Mode inteligente)
@@ -252,7 +261,11 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 		s.lastSPPercent = spPercent
 
 		// Log detallado del motivo del potting
-		if usedSPPrediction {
+		if usedSPContinuousSpam {
+			timeInSpam := now.Sub(s.continuousSpamStart)
+			logger.Info("🚨 SP Pot SPAM CONTINUO: SP actual=%d%% - Spameando desde hace %v (daño: %.1f%%/seg)",
+				spPercent, timeInSpam.Round(time.Millisecond), damageRate)
+		} else if usedSPPrediction {
 			logger.Info("🧠 SP Pot PREDICCIÓN: SP actual=%d%%, predicho=%.1f%% en 200ms (threshold=%d%%)",
 				spPercent, predictedSP, s.config.AutoPot.SPPercent)
 		} else {

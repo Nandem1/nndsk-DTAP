@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTransparency } from '../contexts/TransparencyContext'
+import { CardDecorations } from './themed-icons'
 import { 
   Activity, 
   Wifi, 
@@ -35,6 +36,10 @@ interface MainProps {
       MemoryTotal: number
       MemoryPercent: number
       GoMemoryUsage: number
+      GoMemoryTotal: number
+      GoMemoryPercent: number
+      ProcessMemoryUsage: number
+      ProcessCPUUsage: number
       GoroutineCount: number
       CPUUsage: number
     }
@@ -141,9 +146,10 @@ export default function Main({
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* HP/SP Status */}
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <CardDecorations isActive={isRunning} />
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 pr-16">
                 <Activity className="h-5 w-5" />
                 Character Status
               </CardTitle>
@@ -289,39 +295,33 @@ export default function Main({
           </Card>
 
           {/* System Performance */}
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <CardDecorations isActive={isConnected} />
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-2 pr-16">
                 <Clock className="h-5 w-5" />
                 System Performance
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="metric-card">
-                  <div className="text-2xl font-bold">{formatUptime(stats.uptime)}</div>
-                  <div className="text-sm text-muted-foreground">Uptime</div>
-                </div>
-                
-                <div className="metric-card">
-                  <div className="text-2xl font-bold">
-                    {stats.system ? `${stats.system.CPUUsage.toFixed(1)}%` : '0%'}
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="metric-card">
+                    <div className="text-2xl font-bold">
+                      {stats.system ? `${stats.system.CPUUsage.toFixed(1)}%` : '0%'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Process CPU</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">CPU Usage</div>
-                </div>
-                
-                <div className="metric-card">
-                  <div className="text-2xl font-bold">
-                    {stats.system ? formatBytes(stats.system.MemoryUsage) : '0 B'}
+                  <div className="metric-card">
+                    <div className="text-2xl font-bold">
+                      {stats.system ? formatBytes(stats.system.ProcessMemoryUsage) : '0 B'}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Process RAM</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">RAM Usage</div>
                 </div>
-                
                 <div className="metric-card">
-                  <div className="text-2xl font-bold">
-                    {stats.system ? stats.system.GoroutineCount : 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Goroutines</div>
+                  <div className="text-xl font-bold">{formatUptime(stats.uptime)}</div>
+                  <div className="text-xs text-muted-foreground">Uptime</div>
                 </div>
               </div>
             </CardContent>
@@ -330,8 +330,9 @@ export default function Main({
 
         {/* Message Display */}
         {message && (
-          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
-            <CardContent className="pt-6">
+          <Card className={`relative ${transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}`}>
+            <CardDecorations isActive={true} />
+            <CardContent className="pt-6 pr-16">
               <div className="flex items-center gap-2 text-sm">
                 <MousePointer className="h-4 w-4" />
                 <span>{message}</span>

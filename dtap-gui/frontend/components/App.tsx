@@ -67,6 +67,10 @@ export default function App() {
       MemoryTotal: 0,
       MemoryPercent: 0,
       GoMemoryUsage: 0,
+      GoMemoryTotal: 0,
+      GoMemoryPercent: 0,
+      ProcessMemoryUsage: 0,
+      ProcessCPUUsage: 0,
       GoroutineCount: 0,
       CPUUsage: 0
     },
@@ -113,7 +117,10 @@ export default function App() {
             characterName: statsData.character_name || prev.characterName,
             mapName: statsData.map_name || prev.mapName,
             jobName: statsData.job_name || prev.jobName,
-            system: statsData.system || prev.system,
+            system: {
+              ...prev.system,
+              ...(statsData.system || {})
+            },
             autopot_prediction: statsData.autopot_prediction || prev.autopot_prediction
           }))
           setIsRunning(statsData.is_running || false)

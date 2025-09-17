@@ -11,7 +11,7 @@
   "autobuff": {
     "enabled": true,
     "delay_ms": 5000,
-    "gloom_key": "R",
+    "gloom_key": "",
     "aspd_key": "W"
   },
   "spammer": {
@@ -26,7 +26,7 @@
     "mouse_click": true,
     "mode": "simple",
     "key_click_ratio": 3,
-    "click_delay_ms": 20
+    "click_delay_ms": 50
   },
   "ui": {
     "show_debug": false,

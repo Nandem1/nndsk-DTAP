@@ -4,6 +4,7 @@ import { Home, Zap, Settings } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import TransparencyToggle from './TransparencyToggle'
 import { useTransparency } from '../contexts/TransparencyContext'
+import { NavigationDecorations } from './themed-icons'
 
 type Route = 'main' | 'cheats'
 
@@ -54,6 +55,9 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
             })}
           </div>
         </div>
+        
+        {/* Navigation Decorations between Cheats and Toggles */}
+        <NavigationDecorations className="mr-4" />
         
         {/* Theme and Transparency Toggles */}
         <div className="flex items-center space-x-2 no-drag">
