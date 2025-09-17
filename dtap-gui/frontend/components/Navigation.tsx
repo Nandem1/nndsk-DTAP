@@ -2,6 +2,8 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Home, Zap, Settings } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
+import TransparencyToggle from './TransparencyToggle'
+import { useTransparency } from '../contexts/TransparencyContext'
 
 type Route = 'main' | 'cheats'
 
@@ -11,6 +13,7 @@ interface NavigationProps {
 }
 
 export default function Navigation({ currentRoute, onRouteChange }: NavigationProps) {
+  const { transparencyMode } = useTransparency()
   const routes = [
     { id: 'main' as Route, label: 'Main', icon: Home },
     { id: 'cheats' as Route, label: 'Cheats', icon: Zap }
@@ -25,7 +28,7 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
   return (
     <nav 
       onDoubleClick={handleDoubleClick}
-      className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 titlebar"
+      className={`${transparencyMode === 'hyprland' ? 'hyprland-nav' : 'glass-nav'} titlebar`}
     >
       <div className="flex h-16 items-center px-6">
         <div className="flex items-center space-x-8 flex-1">
@@ -52,8 +55,9 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
           </div>
         </div>
         
-        {/* Theme Toggle */}
+        {/* Theme and Transparency Toggles */}
         <div className="flex items-center space-x-2 no-drag">
+          <TransparencyToggle />
           <ThemeToggle />
         </div>
         
@@ -62,7 +66,7 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-secondary"
+            className="h-8 w-8 p-0"
             onClick={() => window.runtime?.WindowMinimise()}
           >
             <span className="text-xs">−</span>
@@ -70,7 +74,7 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
           <Button
             variant="ghost"
             size="sm"
-            className="h-8 w-8 p-0 hover:bg-secondary"
+            className="h-8 w-8 p-0"
             onClick={() => window.runtime?.WindowMaximise()}
           >
             <span className="text-xs">□</span>

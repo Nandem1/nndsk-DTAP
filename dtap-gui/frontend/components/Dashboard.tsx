@@ -79,7 +79,7 @@ export default function Dashboard({
         <div className="vercel-card p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              <div className={`status-indicator ${isConnected ? 'connected' : 'disconnected'}`}></div>
               <div>
                 <span className="text-foreground text-sm font-medium">
                   {isConnected ? 'Connected' : 'Disconnected'}
@@ -130,13 +130,13 @@ export default function Dashboard({
                   </div>
                   {stats.jobName && (
                     <div className="flex items-center gap-2">
-                      <Sword className="h-4 w-4 text-yellow-500" />
+                      <Sword className="h-4 w-4 job-icon" />
                       <span className="text-xs text-muted-foreground">{stats.jobName}</span>
                     </div>
                   )}
                   {stats.mapName && (
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-green-500" />
+                      <MapPin className="h-4 w-4 map-icon" />
                       <span className="text-xs text-muted-foreground">{stats.mapName}</span>
                     </div>
                   )}
@@ -151,7 +151,7 @@ export default function Dashboard({
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <motion.div 
-                    className="bg-red-500 h-2 rounded-full"
+                    className="hp-bar h-2 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${hpPercent}%` }}
                     transition={{ duration: 0.3 }}
@@ -167,7 +167,7 @@ export default function Dashboard({
                 </div>
                 <div className="w-full bg-muted rounded-full h-2">
                   <motion.div 
-                    className="bg-blue-500 h-2 rounded-full"
+                    className="sp-bar h-2 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${spPercent}%` }}
                     transition={{ duration: 0.3 }}
@@ -210,8 +210,8 @@ export default function Dashboard({
                   disabled={!isConnected}
                   className={`w-full h-12 text-sm font-medium transition-all duration-200 ${
                     isRunning 
-                      ? 'bg-red-600 hover:bg-red-700 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white'
+                      ? 'stop-button' 
+                      : 'start-button'
                   } ${!isConnected ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {isRunning ? (
@@ -231,7 +231,7 @@ export default function Dashboard({
               {/* Auto Pot */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Zap className="h-4 w-4 text-yellow-500" />
+                  <Zap className="h-4 w-4 text-warning" />
                   <Label className="text-foreground text-sm">Auto Pot</Label>
                 </div>
                 <Switch
@@ -244,7 +244,7 @@ export default function Dashboard({
               {/* Auto Buff */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Shield className="h-4 w-4 text-blue-500" />
+                  <Shield className="h-4 w-4 text-info" />
                   <Label className="text-foreground text-sm">Auto Buff</Label>
                 </div>
                 <Switch
@@ -257,7 +257,7 @@ export default function Dashboard({
               {/* Spammer */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Target className="h-4 w-4 text-red-500" />
+                  <Target className="h-4 w-4 text-error" />
                   <Label className="text-foreground text-sm">Spammer</Label>
                 </div>
                 <Switch

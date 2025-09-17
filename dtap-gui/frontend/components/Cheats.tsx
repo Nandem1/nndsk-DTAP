@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { useTransparency } from '../contexts/TransparencyContext'
 import { 
   Zap, 
   Shield, 
@@ -92,22 +93,24 @@ export default function Cheats({
   onSpammerModeChange,
   onSaveConfig
 }: CheatsProps) {
+  const { transparencyMode } = useTransparency()
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="h-full flex flex-col"
+      className={`h-full flex flex-col ${transparencyMode === 'hyprland' ? 'hyprland-background' : 'glass-background'}`}
     >
       <div className="flex-1 p-4 space-y-4">
         {/* Cheats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {/* Auto Pot */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Zap className="h-4 w-4 text-yellow-500" />
+                <Zap className="h-4 w-4 text-warning" />
                 Auto Pot
               </CardTitle>
             </CardHeader>
@@ -195,10 +198,10 @@ export default function Cheats({
           </Card>
 
           {/* Auto Buff */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Shield className="h-4 w-4 text-blue-500" />
+                <Shield className="h-4 w-4 text-info" />
                 Auto Buff
               </CardTitle>
             </CardHeader>
@@ -250,10 +253,10 @@ export default function Cheats({
           </Card>
 
           {/* Spammer */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
-                <Target className="h-4 w-4 text-red-500" />
+                <Target className="h-4 w-4 text-error" />
                 Spammer
               </CardTitle>
             </CardHeader>

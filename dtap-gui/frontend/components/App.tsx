@@ -5,6 +5,7 @@ import Main from './Main'
 import Cheats from './Cheats'
 import Toast from './Toast'
 import { ThemeProvider } from '../contexts/ThemeContext'
+import { TransparencyProvider } from '../contexts/TransparencyContext'
 import { 
   ConnectToRO, 
   StartServices, 
@@ -237,7 +238,8 @@ export default function App() {
 
   return (
     <ThemeProvider>
-      <div className="h-screen w-screen overflow-hidden flex flex-col">
+      <TransparencyProvider>
+        <div className="h-screen w-screen overflow-hidden flex flex-col">
         {/* Navigation */}
         <Navigation 
           currentRoute={currentRoute} 
@@ -313,7 +315,8 @@ export default function App() {
           type={toast.type}
           onClose={() => setToast(prev => ({ ...prev, isVisible: false }))}
         />
-      </div>
+        </div>
+      </TransparencyProvider>
     </ThemeProvider>
   )
 }

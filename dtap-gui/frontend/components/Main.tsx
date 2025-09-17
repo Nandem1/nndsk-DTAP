@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { useTransparency } from '../contexts/TransparencyContext'
 import { 
   Activity, 
   Wifi, 
@@ -62,8 +63,7 @@ export default function Main({
   onConnect,
   onStartStop
 }: MainProps) {
-  const [debugInfo, setDebugInfo] = useState<any>(null)
-  const [showDebug, setShowDebug] = useState(false)
+  const { transparencyMode } = useTransparency()
   
   const hpPercent = (stats.hp / stats.maxHp) * 100
   const spPercent = (stats.sp / stats.maxSp) * 100
@@ -100,7 +100,7 @@ export default function Main({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="h-full flex flex-col overflow-hidden"
+      className={`h-full flex flex-col overflow-hidden ${transparencyMode === 'hyprland' ? 'hyprland-background' : 'glass-background'}`}
     >
       <div className="flex-1 p-6 space-y-6 overflow-y-auto">
         {/* Header */}
@@ -141,7 +141,7 @@ export default function Main({
         {/* Main Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* HP/SP Status */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
@@ -158,13 +158,13 @@ export default function Main({
                   </div>
                   {stats.jobName && (
                     <div className="flex items-center gap-2">
-                      <Sword className="h-4 w-4 text-yellow-500" />
+                      <Sword className="h-4 w-4 job-icon" />
                       <span className="text-xs text-muted-foreground">{stats.jobName}</span>
                     </div>
                   )}
                   {stats.mapName && (
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-green-500" />
+                      <MapPin className="h-4 w-4 map-icon" />
                       <span className="text-xs text-muted-foreground">{stats.mapName}</span>
                     </div>
                   )}
@@ -179,7 +179,7 @@ export default function Main({
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2">
                   <motion.div 
-                    className="bg-red-500 h-2 rounded-full"
+                    className="hp-bar h-2 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${hpPercent}%` }}
                     transition={{ duration: 0.3 }}
@@ -195,7 +195,7 @@ export default function Main({
                 </div>
                 <div className="w-full bg-secondary rounded-full h-2">
                   <motion.div 
-                    className="bg-blue-500 h-2 rounded-full"
+                    className="sp-bar h-2 rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${spPercent}%` }}
                     transition={{ duration: 0.3 }}
@@ -212,25 +212,25 @@ export default function Main({
                       <div className="flex items-center gap-2">
                         {stats.autopot_prediction.continuous_spam_mode ? (
                           <motion.div
-                            className="flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 rounded-md text-xs"
+                            className="flex items-center gap-1 px-2 py-1 spam-mode-badge rounded-md text-xs"
                             animate={{ opacity: [1, 0.5, 1] }}
                             transition={{ duration: 1, repeat: Infinity }}
                           >
-                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--spam-mode))' }}></div>
                             SPAM CONTINUO
                           </motion.div>
                         ) : stats.autopot_prediction.prediction_mode ? (
                           <motion.div
-                            className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 text-purple-400 rounded-md text-xs"
+                            className="flex items-center gap-1 px-2 py-1 prediction-mode-badge rounded-md text-xs"
                             animate={{ opacity: [1, 0.7, 1] }}
                             transition={{ duration: 2, repeat: Infinity }}
                           >
-                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--prediction-mode))' }}></div>
                             PREDICCIÓN
                           </motion.div>
                         ) : (
-                          <div className="flex items-center gap-1 px-2 py-1 bg-gray-500/20 text-gray-400 rounded-md text-xs">
-                            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                          <div className="flex items-center gap-1 px-2 py-1 normal-mode-badge rounded-md text-xs">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--normal-mode))' }}></div>
                             NORMAL
                           </div>
                         )}
@@ -260,10 +260,10 @@ export default function Main({
                   disabled={!isConnected}
                   className={`w-full h-12 ${
                     !isRunning 
-                      ? 'bg-green-600 hover:bg-green-700' 
+                      ? 'start-button' 
                       : isPaused
-                      ? 'bg-blue-600 hover:bg-blue-700'
-                      : 'bg-orange-600 hover:bg-orange-700'
+                      ? 'pause-button'
+                      : 'stop-button'
                   }`}
                 >
                   {!isRunning ? (
@@ -284,82 +284,12 @@ export default function Main({
                   )}
                 </Button>
                 
-                {/* Debug Buttons */}
-                <div className="space-y-2">
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const { DebugCharacterInfo } = await import('../wailsjs/wailsjs/go/main/App')
-                        const result = await DebugCharacterInfo()
-                        if (result.success) {
-                          setDebugInfo(result.data)
-                          setShowDebug(true)
-                        } else {
-                          alert(`Error: ${result.message}`)
-                        }
-                      } catch (error) {
-                        alert(`Error: ${error}`)
-                      }
-                    }}
-                    disabled={!isConnected}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    🔍 Debug Job ID
-                  </Button>
-                  
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const { SearchJobIDInMemory } = await import('../wailsjs/wailsjs/go/main/App')
-                        const result = await SearchJobIDInMemory()
-                        if (result.success) {
-                          setDebugInfo(result.data)
-                          setShowDebug(true)
-                          alert(`Búsqueda completada: ${result.message}`)
-                        } else {
-                          alert(`Error: ${result.message}`)
-                        }
-                      } catch (error) {
-                        alert(`Error: ${error}`)
-                      }
-                    }}
-                    disabled={!isConnected}
-                    variant="outline"
-                    className="w-full bg-blue-50 hover:bg-blue-100"
-                  >
-                    🔎 Buscar Job ID en Memoria
-                  </Button>
-                  
-                  <Button
-                    onClick={async () => {
-                      try {
-                        const { MonitorJobAddresses } = await import('../wailsjs/wailsjs/go/main/App')
-                        const result = await MonitorJobAddresses()
-                        if (result.success) {
-                          setDebugInfo(result.data)
-                          setShowDebug(true)
-                          alert(`Monitoreo completado: ${result.message}`)
-                        } else {
-                          alert(`Error: ${result.message}`)
-                        }
-                      } catch (error) {
-                        alert(`Error: ${error}`)
-                      }
-                    }}
-                    disabled={!isConnected}
-                    variant="outline"
-                    className="w-full bg-purple-50 hover:bg-purple-100"
-                  >
-                    📊 Monitorear Direcciones
-                  </Button>
-                </div>
               </div>
             </CardContent>
           </Card>
 
           {/* System Performance */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
@@ -400,7 +330,7 @@ export default function Main({
 
         {/* Message Display */}
         {message && (
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-2 text-sm">
                 <MousePointer className="h-4 w-4" />
@@ -410,101 +340,6 @@ export default function Main({
           </Card>
         )}
 
-        {/* Debug Information */}
-        {showDebug && debugInfo && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>🔍 Debug Information</span>
-                <Button
-                  onClick={() => setShowDebug(false)}
-                  variant="outline"
-                  size="sm"
-                >
-                  Cerrar
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Character Name:</h4>
-                  <p className="text-sm font-mono">{debugInfo.character_name || 'No encontrado'}</p>
-                </div>
-                
-                <div className="bg-muted p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Job ID Analysis:</h4>
-                  <div className="space-y-1 max-h-96 overflow-y-auto border rounded p-2 bg-background">
-                    {Object.entries(debugInfo)
-                      .filter(([key]) => key.startsWith('offset_') || key.startsWith('near_') || key.startsWith('heap_') || key.startsWith('addr_'))
-                      .sort(([a], [b]) => {
-                        // Ordenar por tipo: addr_ (monitoreo) primero, luego otros
-                        if (a.startsWith('addr_') && !b.startsWith('addr_')) return -1
-                        if (!a.startsWith('addr_') && b.startsWith('addr_')) return 1
-                        if (a.startsWith('near_character_') && !b.startsWith('near_character_')) return -1
-                        if (!a.startsWith('near_character_') && b.startsWith('near_character_')) return 1
-                        if (a.startsWith('near_hp_') && !b.startsWith('near_hp_')) return -1
-                        if (!a.startsWith('near_hp_') && b.startsWith('near_hp_')) return 1
-                        return a.localeCompare(b)
-                      })
-                      .map(([key, value]: [string, any]) => {
-                        const isSearchResult = key.startsWith('near_') || key.startsWith('heap_')
-                        const isMonitorResult = key.startsWith('addr_')
-                        const isChanged = value.is_changed
-                        
-                        return (
-                          <div key={key} className={`flex justify-between items-center text-xs border-b pb-1 hover:bg-muted/50 p-1 rounded ${
-                            isMonitorResult ? (isChanged ? 'bg-red-50 border-red-200' : 'bg-purple-50 border-purple-200') : 
-                            isSearchResult ? 'bg-green-50 border-green-200' : ''
-                          }`}>
-                            <div className="flex flex-col">
-                              <span className={`font-mono ${
-                                isMonitorResult ? (isChanged ? 'text-red-700 font-bold' : 'text-purple-700 font-bold') :
-                                isSearchResult ? 'text-green-700 font-bold' : 'text-blue-600'
-                              }`}>
-                                {key}
-                              </span>
-                              {(isSearchResult || isMonitorResult) && value.address && (
-                                <span className="text-xs text-gray-600">Address: {value.address}</span>
-                              )}
-                              {isMonitorResult && value.hex_value && (
-                                <span className="text-xs text-gray-600">Hex: {value.hex_value}</span>
-                              )}
-                            </div>
-                            <div className="text-right">
-                              <div className="font-mono">Value: {value.value}</div>
-                              <div className={`font-medium ${
-                                isMonitorResult && isChanged ? 'text-red-600 font-bold' :
-                                value.value === 0 ? 'text-green-600' : 
-                                value.value === 4019 ? 'text-purple-600' : 
-                                value.job_name.includes('Unknown') ? 'text-gray-500' : 'text-primary'
-                              }`}>
-                                {value.job_name}
-                                {isMonitorResult && isChanged && ' ⚠️ CHANGED!'}
-                              </div>
-                              {isSearchResult && value.offset_from_base !== undefined && (
-                                <div className="text-xs text-green-600">Offset: {value.offset_from_base}</div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                  </div>
-                </div>
-                
-                <div className="text-xs text-muted-foreground bg-yellow-50 p-3 rounded border">
-                  <p><strong>Instrucciones:</strong></p>
-                  <p>1. <strong>Haz scroll</strong> en el área de arriba para ver todos los offsets</p>
-                  <p>2. <strong>Direcciones Monitoreadas (púrpura):</strong> Las 7 direcciones encontradas para Creator</p>
-                  <p>3. <strong>Cambia de job</strong> en el juego y presiona &quot;📊 Monitorear Direcciones&quot;</p>
-                  <p>4. <strong>Busca la dirección que cambió</strong> (aparecerá en rojo con &quot;⚠️ CHANGED!&quot;)</p>
-                  <p>5. <strong>Esa es la dirección correcta</strong> del job ID</p>
-                  <p>6. <strong>Envíame la dirección</strong> que cambió para actualizar el código</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
       </div>
     </motion.div>
   )

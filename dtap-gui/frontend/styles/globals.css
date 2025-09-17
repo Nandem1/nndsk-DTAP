@@ -6,56 +6,91 @@
 
 @layer base {
   :root {
-    /* Dark Theme - Coquette Amatista Suave */
-    --background: 240 10% 3.9%;
-    --foreground: 240 10% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 240 10% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 240 10% 98%;
-    --primary: 270 100% 70%;
-    --primary-foreground: 240 10% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 240 5% 64.9%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 270 100% 70%;
-    --accent-foreground: 240 10% 98%;
+    /* Dark Theme - Vercel Style */
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 240 10% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 270 100% 70%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
     --radius: 0.5rem;
+    
+    /* Status and Progress Colors - Dark Theme */
+    --status-connected: 142 76% 36%;
+    --status-disconnected: 0 84% 60%;
+    --hp-bar: 0 84% 60%;
+    --sp-bar: 221 83% 53%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --info: 221 83% 53%;
+    --error: 0 84% 60%;
+    --job-icon: 45 93% 47%;
+    --map-icon: 142 76% 36%;
+    --spam-mode: 0 84% 60%;
+    --prediction-mode: 0 0% 83.1%;
+    --normal-mode: 0 0% 63.9%;
   }
 
   .light {
-    /* Light Theme - Coquette Amatista Suave */
-    --background: 240 10% 98%;
-    --foreground: 240 10% 3.9%;
-    --card: 240 10% 98%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 240 10% 98%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 270 100% 60%;
-    --primary-foreground: 240 10% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 270 100% 60%;
-    --accent-foreground: 240 10% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 240 10% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 270 100% 60%;
+    /* Light Theme - Crema Suave con Azul Elegante */
+    --background: 200 15% 96%;
+    --foreground: 200 20% 20%;
+    --card: 200 20% 94%;
+    --card-foreground: 200 20% 20%;
+    --popover: 200 20% 94%;
+    --popover-foreground: 200 20% 20%;
+    --primary: 200 70% 60%;
+    --primary-foreground: 200 15% 96%;
+    --secondary: 200 15% 90%;
+    --secondary-foreground: 200 20% 25%;
+    --muted: 200 12% 92%;
+    --muted-foreground: 200 10% 50%;
+    --accent: 200 60% 65%;
+    --accent-foreground: 200 15% 96%;
+    --destructive: 10 70% 55%;
+    --destructive-foreground: 200 15% 96%;
+    --border: 200 15% 88%;
+    --input: 200 12% 92%;
+    --ring: 200 70% 60%;
+    --radius: 0.5rem;
+    
+    /* Status and Progress Colors - Light Theme */
+    --status-connected: 160 60% 50%;
+    --status-disconnected: 10 70% 55%;
+    --hp-bar: 10 70% 55%;
+    --sp-bar: 200 70% 55%;
+    --success: 160 60% 50%;
+    --warning: 45 80% 60%;
+    --info: 200 70% 55%;
+    --error: 10 70% 55%;
+    --job-icon: 45 80% 60%;
+    --map-icon: 160 60% 50%;
+    --spam-mode: 10 70% 55%;
+    --prediction-mode: 200 70% 60%;
+    --normal-mode: 200 10% 50%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+  }
+  
+  html {
+    background: transparent;
   }
   
   body {
@@ -65,6 +100,11 @@
     overflow: hidden;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  #__next {
+    height: 100vh;
+    width: 100vw;
   }
 }
 
@@ -81,16 +121,151 @@
     @apply bg-card border border-border rounded-lg p-4;
   }
   
+  /* Glassmorphism Effects - Dark Theme */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+  
+  .glass-nav {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .glass-background {
+    background: rgba(255, 255, 255, 0.005);
+    backdrop-filter: blur(6px);
+  }
+  
+  /* Light Theme Glassmorphism Overrides */
+  .light .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+  
+  .light .glass-nav {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .light .glass-background {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(6px);
+  }
+  
+  /* Hyprland Aggressive Transparency */
+  .hyprland-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  }
+  
+  .hyprland-nav {
+    background: rgba(255, 255, 255, 0.015);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .hyprland-background {
+    background: rgba(255, 255, 255, 0.01);
+    backdrop-filter: blur(10px);
+  }
+  
+  /* Light Theme Hyprland Overrides */
+  .light .hyprland-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  }
+  
+  .light .hyprland-nav {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .light .hyprland-background {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+  }
+  
   .status-indicator {
     @apply w-2 h-2 rounded-full;
   }
   
   .status-indicator.connected {
-    @apply bg-green-500;
+    background-color: hsl(var(--status-connected));
   }
   
   .status-indicator.disconnected {
-    @apply bg-red-500;
+    background-color: hsl(var(--status-disconnected));
+  }
+  
+  /* Progress Bars */
+  .hp-bar {
+    background-color: hsl(var(--hp-bar));
+  }
+  
+  .sp-bar {
+    background-color: hsl(var(--sp-bar));
+  }
+  
+  /* Icon Colors */
+  .job-icon {
+    color: hsl(var(--job-icon));
+  }
+  
+  .map-icon {
+    color: hsl(var(--map-icon));
+  }
+  
+  /* Status Badges */
+  .spam-mode-badge {
+    background-color: hsl(var(--spam-mode) / 0.2);
+    color: hsl(var(--spam-mode));
+  }
+  
+  .prediction-mode-badge {
+    background-color: hsl(var(--prediction-mode) / 0.2);
+    color: hsl(var(--prediction-mode));
+  }
+  
+  .normal-mode-badge {
+    background-color: hsl(var(--normal-mode) / 0.2);
+    color: hsl(var(--normal-mode));
+  }
+  
+  /* Button States */
+  .start-button {
+    background-color: hsl(var(--success));
+  }
+  
+  .start-button:hover {
+    background-color: hsl(var(--success) / 0.9);
+  }
+  
+  .pause-button {
+    background-color: hsl(var(--info));
+  }
+  
+  .pause-button:hover {
+    background-color: hsl(var(--info) / 0.9);
+  }
+  
+  .stop-button {
+    background-color: hsl(var(--warning));
+  }
+  
+  .stop-button:hover {
+    background-color: hsl(var(--warning) / 0.9);
   }
   
   .titlebar {

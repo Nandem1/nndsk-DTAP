@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useTransparency } from '../contexts/TransparencyContext'
 import { 
   Settings, 
   Monitor,
@@ -16,13 +17,15 @@ interface ConfigProps {
 }
 
 export default function Config({ onSaveConfig }: ConfigProps) {
+  const { transparencyMode } = useTransparency()
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.3 }}
-      className="h-full flex flex-col"
+      className={`h-full flex flex-col ${transparencyMode === 'hyprland' ? 'hyprland-background' : 'glass-background'}`}
     >
       <div className="flex-1 p-6 space-y-6">
         {/* Header */}
@@ -34,7 +37,7 @@ export default function Config({ onSaveConfig }: ConfigProps) {
         {/* Config Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Display Settings */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Monitor className="h-5 w-5" />
@@ -71,7 +74,7 @@ export default function Config({ onSaveConfig }: ConfigProps) {
           </Card>
 
           {/* Input Settings */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Keyboard className="h-5 w-5" />
@@ -106,7 +109,7 @@ export default function Config({ onSaveConfig }: ConfigProps) {
           </Card>
 
           {/* Mouse Settings */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mouse className="h-5 w-5" />
@@ -134,7 +137,7 @@ export default function Config({ onSaveConfig }: ConfigProps) {
           </Card>
 
           {/* System Settings */}
-          <Card>
+          <Card className={transparencyMode === 'hyprland' ? 'hyprland-card' : 'glass-card'}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />

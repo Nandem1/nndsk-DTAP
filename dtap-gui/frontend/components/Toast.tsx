@@ -12,22 +12,22 @@ export default function Toast({ isVisible, message, type, onClose }: ToastProps)
   const getIcon = () => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />
+        return <CheckCircle className="h-5 w-5 text-success" />
       case 'error':
-        return <XCircle className="h-5 w-5 text-red-500" />
+        return <XCircle className="h-5 w-5 text-error" />
       case 'warning':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />
+        return <AlertCircle className="h-5 w-5 text-warning" />
     }
   }
 
   const getBgColor = () => {
     switch (type) {
       case 'success':
-        return 'bg-green-500/10 border-green-500/20'
+        return 'bg-success/10 border-success/20'
       case 'error':
-        return 'bg-red-500/10 border-red-500/20'
+        return 'bg-error/10 border-error/20'
       case 'warning':
-        return 'bg-yellow-500/10 border-yellow-500/20'
+        return 'bg-warning/10 border-warning/20'
     }
   }
 

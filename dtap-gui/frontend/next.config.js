@@ -13,6 +13,10 @@ const nextConfig = {
   },
   assetPrefix: './',
   basePath: '',
+  // Configuración para transparencia
+  experimental: {
+    optimizeCss: false
+  }
 }
 
 module.exports = nextConfig

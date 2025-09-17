@@ -1,13 +1,13 @@
 # Sistema de Temas DTAP
 
 ## Descripción
-El sistema de temas de DTAP permite alternar entre modo oscuro y modo claro con una paleta de colores coquette amatista suave.
+El sistema de temas de DTAP permite alternar entre modo oscuro (estilo Vercel) y modo claro con una paleta de colores azul elegante sobre crema suave.
 
 ## Características
 
 ### 🎨 Paleta de Colores
-- **Modo Oscuro**: Tonos púrpura/amatista suaves con fondo oscuro
-- **Modo Claro**: Tonos púrpura/amatista suaves con fondo claro
+- **Modo Oscuro**: Estilo Vercel con tonos neutros y profesionales
+- **Modo Claro**: Crema suave con azul elegante - fondo cálido y acogedor
 - **Transiciones suaves**: Animaciones de 0.3s entre cambios de tema
 
 ### 🔧 Funcionalidades
@@ -63,15 +63,17 @@ frontend/
 
 ## Variables CSS
 
-### Modo Oscuro (por defecto)
-- `--background`: 240 10% 3.9% (fondo muy oscuro con tinte púrpura)
-- `--primary`: 270 100% 70% (púrpura vibrante)
-- `--secondary`: 240 3.7% 15.9% (gris oscuro con tinte púrpura)
+### Modo Oscuro (por defecto) - Estilo Vercel
+- `--background`: 0 0% 3.9% (fondo negro puro)
+- `--primary`: 0 0% 98% (blanco puro para texto principal)
+- `--secondary`: 0 0% 14.9% (gris oscuro neutro)
 
-### Modo Claro
-- `--background`: 240 10% 98% (fondo claro con tinte púrpura)
-- `--primary`: 270 100% 60% (púrpura más suave)
-- `--secondary`: 240 4.8% 95.9% (gris claro con tinte púrpura)
+### Modo Claro - Crema Suave con Azul Elegante
+- `--background`: 200 15% 96% (crema suave con tinte azul sutil)
+- `--primary`: 200 70% 60% (azul elegante y profesional)
+- `--secondary`: 200 15% 90% (gris muy claro con tinte azul mínimo)
+- `--foreground`: 200 20% 20% (texto oscuro con mejor contraste)
+- `--card`: 200 20% 94% (tarjetas ligeramente más oscuras para contraste)
 
 ## Personalización
 
