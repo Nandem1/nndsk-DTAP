@@ -23,6 +23,16 @@ Agradecemos a todos los desarrolladores de la comunidad por su trabajo y contrib
 - **🎨 Temas Personalizables**: Múltiples temas con transparencia
 - **⚙️ Configuración en Tiempo Real**: Ajustes sin reiniciar
 
+## 🖼️ Interfaz de Usuario
+
+### Modo Oscuro
+![DTAP Dark Mode](dtap-gui/images/dark-mode-1.png)
+![DTAP Dark Mode](dtap-gui/images/dark-mode-2.png)
+
+### Modo Claro
+![DTAP Light Mode](dtap-gui/images/light-mode-1.png)
+![DTAP Light Mode](dtap-gui/images/light-mode-2.png)
+
 ## 📁 Estructura del Proyecto
 
 ```
