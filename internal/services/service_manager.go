@@ -24,7 +24,7 @@ type ServiceManager struct {
 	windowHandle windows.Handle
 
 	// Servicios
-	spammerService  *spammer.UltraFastSpammer
+	spammerService  *spammer.Spammer
 	autopotService  *autopot.UltraFastAutoPot
 	autobuffService *autobuff.UltraFastAutoBuff
 
@@ -82,7 +82,7 @@ func (sm *ServiceManager) Start() error {
 	input.Start(sm.ctx, sm.windowHandle)
 
 	// Inicializar servicios
-	sm.spammerService = spammer.NewUltraFastSpammer(sm.config, sm.windowHandle)
+	sm.spammerService = spammer.NewSpammer(sm.config, sm.windowHandle)
 	sm.autopotService = autopot.NewUltraFastAutoPot(sm.config, sm.memClient, sm.windowHandle)
 	sm.autobuffService = autobuff.NewUltraFastAutoBuff(sm.config, sm.memClient, sm.windowHandle)
 
@@ -112,15 +112,20 @@ func (sm *ServiceManager) setupSchedulerTasks() {
 		})
 	}
 
-	// Spammer - Prioridad alta (combate)
+	// Spammer - Prioridad alta (combate) - 1ms ultra-fast
 	if sm.config.Spammer.Enabled {
+		delay := time.Duration(sm.config.Spammer.Delay) * time.Millisecond
+		if delay < 1*time.Millisecond {
+			delay = 1 * time.Millisecond // Mínimo 1ms para estabilidad
+		}
+
 		sm.scheduler.AddTask(&scheduler.Task{
 			ID:          "spammer",
 			Priority:    scheduler.PriorityHigh,
-			Interval:    10 * time.Millisecond, // 100 Hz - balance velocidad/estabilidad
+			Interval:    delay,
 			Handler:     sm.spammerService.ProcessSpammer,
 			Enabled:     true,
-			Description: "Spammer - Combate prioritario",
+			Description: "Spammer - Ultra-fast (1ms+)",
 		})
 	}
 
@@ -233,7 +238,7 @@ func (sm *ServiceManager) UpdateConfig(cfg *config.Config) {
 
 	if sm.spammerService != nil {
 		// El spammer no tiene UpdateConfig, se recrea
-		sm.spammerService = spammer.NewUltraFastSpammer(cfg, sm.windowHandle)
+		sm.spammerService = spammer.NewSpammer(cfg, sm.windowHandle)
 	}
 
 	if sm.autopotService != nil {

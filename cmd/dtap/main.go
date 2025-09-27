@@ -109,11 +109,8 @@ func main() {
 	if cfg.Spammer.Enabled {
 		logger.Info("- Spammer: HABILITADO (%d teclas + click izquierdo, %.1fms delay)", len(cfg.Spammer.Keys), cfg.Spammer.Delay)
 		logger.Info("- Teclas spammer: %v", cfg.Spammer.Keys)
-		if cfg.Spammer.SkillCancel {
-			logger.Info("- Skill Cancel: HABILITADO (cancela habilidades)")
-		}
-		if cfg.Spammer.DoubleClick {
-			logger.Info("- Double Click: HABILITADO (doble click para cancelar)")
+		if cfg.Spammer.MouseClick {
+			logger.Info("- Mouse Click: HABILITADO (click automático con teclas)")
 		}
 	} else {
 		logger.Info("- Spammer: DESHABILITADO")

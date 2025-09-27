@@ -27,16 +27,10 @@ type Config struct {
 	} `json:"autobuff"`
 
 	Spammer struct {
-		Enabled     bool     `json:"enabled"`
-		Keys        []string `json:"keys"`
-		Delay       float64  `json:"delay_ms"` // Cambiado a float64 para soportar decimales
-		SkillCancel bool     `json:"skill_cancel"`
-		DoubleClick bool     `json:"double_click"`
-		MouseClick  bool     `json:"mouse_click"`
-		Mode        string   `json:"mode"` // "simple", "adaptive", "ultra", "ultra_fast"
-		// Nuevas opciones para controlar ratio teclas/clicks
-		KeyClickRatio int `json:"key_click_ratio"` // Ratio de teclas por click (ej: 3 = 3 teclas por 1 click)
-		ClickDelay    int `json:"click_delay_ms"`  // Delay adicional para clicks (en ms)
+		Enabled    bool     `json:"enabled"`
+		Keys       []string `json:"keys"`
+		Delay      float64  `json:"delay_ms"` // Delay en milisegundos
+		MouseClick bool     `json:"mouse_click"`
 	} `json:"spammer"`
 
 	UI struct {
@@ -86,25 +80,15 @@ func DefaultConfig() *Config {
 			AspdKey:  "F4",
 		},
 		Spammer: struct {
-			Enabled       bool     `json:"enabled"`
-			Keys          []string `json:"keys"`
-			Delay         float64  `json:"delay_ms"`
-			SkillCancel   bool     `json:"skill_cancel"`
-			DoubleClick   bool     `json:"double_click"`
-			MouseClick    bool     `json:"mouse_click"`
-			Mode          string   `json:"mode"`
-			KeyClickRatio int      `json:"key_click_ratio"`
-			ClickDelay    int      `json:"click_delay_ms"`
+			Enabled    bool     `json:"enabled"`
+			Keys       []string `json:"keys"`
+			Delay      float64  `json:"delay_ms"`
+			MouseClick bool     `json:"mouse_click"`
 		}{
-			Enabled:       false,
-			Keys:          []string{},
-			Delay:         1.0, // Default to 1ms
-			SkillCancel:   false,
-			DoubleClick:   false,
-			MouseClick:    true,         // Enable mouse click by default
-			Mode:          "ultra_fast", // Default to ultra_fast mode
-			KeyClickRatio: 3,            // 3 teclas por 1 click por defecto
-			ClickDelay:    50,           // 50ms delay adicional para clicks
+			Enabled:    false,
+			Keys:       []string{},
+			Delay:      1.0,  // Default to 1ms (ultra-fast)
+			MouseClick: true, // Enable mouse click by default
 		},
 		UI: struct {
 			ShowDebug bool   `json:"show_debug"`

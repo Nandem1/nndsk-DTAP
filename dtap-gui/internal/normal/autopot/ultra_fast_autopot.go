@@ -53,6 +53,7 @@ type UltraFastAutoPot struct {
 	continuousSpamStart    time.Time     // Cuando empezó el spam continuo
 	continuousSpamDuration time.Duration // Duración del spam continuo (2 segundos)
 	highDamageThreshold    float64       // Umbral de daño alto (ej: -20% por segundo)
+	hpSpamCounter          int           // Contador para verificar SP cada 3 HP pots (como C#)
 }
 
 // NewUltraFastAutoPot crea el autopot más rápido posible
@@ -83,6 +84,7 @@ func NewUltraFastAutoPot(cfg *config.Config, memClient *memory.Client, windowHan
 		continuousSpamMode:     false,
 		continuousSpamDuration: constants.AutoPotSpamDuration,
 		highDamageThreshold:    -25.0, // -25% HP por segundo = daño alto (menos agresivo)
+		hpSpamCounter:          0,     // Contador para verificar SP cada 3 HP pots
 	}
 }
 
@@ -161,6 +163,11 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 	usedContinuousSpam := false
 	now := time.Now()
 
+	// Variables para SP (declaradas aquí para usar en spam continuo)
+	shouldUseSPPot := spPercent < s.config.AutoPot.SPPercent
+	usedSPPrediction := false
+	usedSPContinuousSpam := false
+
 	// Verificar si estamos en modo spam continuo
 	if s.continuousSpamMode {
 		timeInSpam := now.Sub(s.continuousSpamStart)
@@ -168,9 +175,23 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 			// Seguir spameando por 2 segundos sin importar el HP
 			shouldUseHPPot = true
 			usedContinuousSpam = true
+
+			// ⭐ CLAVE: Durante spam continuo, también verificar SP cada 3 ciclos
+			s.hpSpamCounter++
+			if s.hpSpamCounter >= 3 {
+				// Verificar SP durante spam continuo (como C#)
+				if spPercent < s.config.AutoPot.SPPercent {
+					shouldUseSPPot = true
+					usedSPContinuousSpam = true
+					logger.Info("🚨 SP Pot DURANTE SPAM CONTINUO: SP actual=%d%% (threshold=%d%%)",
+						spPercent, s.config.AutoPot.SPPercent)
+				}
+				s.hpSpamCounter = 0
+			}
 		} else {
 			// Terminar modo spam continuo
 			s.continuousSpamMode = false
+			s.hpSpamCounter = 0 // Resetear contador
 			logger.Info("🛑 Spam continuo terminado después de %v", timeInSpam.Round(time.Millisecond))
 		}
 	} else if s.config.AutoPot.PredictionMode && hpPredictionValid {
@@ -233,17 +254,14 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 	}
 
 	// Auto pot SP con predicción - ultra rápido
-	shouldUseSPPot := spPercent < s.config.AutoPot.SPPercent
-	usedSPPrediction := false
-	usedSPContinuousSpam := false
 
 	// Verificar si estamos en modo spam continuo para SP también
 	if s.continuousSpamMode {
-		// Durante spam continuo, también spamear SP si está por debajo del threshold
-		// (sin predicción, solo lógica normal)
-		if spPercent < s.config.AutoPot.SPPercent {
-			shouldUseSPPot = true
-			usedSPContinuousSpam = true
+		// Durante spam continuo, SP se verifica cada 3 HP pots (como C#)
+		// La verificación ya se hizo arriba en la lógica de HP
+		// Aquí solo procesamos el resultado
+		if usedSPContinuousSpam {
+			// SP ya fue verificado y marcado para usar
 		}
 	} else if spPredictionValid {
 		spPredictionTriggered := predictedSP < float64(s.config.AutoPot.SPPercent)
