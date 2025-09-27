@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { Home, Zap, Settings } from 'lucide-react'
+import { Home, Zap, Settings, Sword } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 import TransparencyToggle from './TransparencyToggle'
 import { useTransparency } from '../contexts/TransparencyContext'
 import { NavigationDecorations } from './themed-icons'
 
-type Route = 'main' | 'cheats'
+type Route = 'main' | 'cheats' | 'atkdef'
 
 interface NavigationProps {
   currentRoute: Route
@@ -17,7 +17,8 @@ export default function Navigation({ currentRoute, onRouteChange }: NavigationPr
   const { transparencyMode } = useTransparency()
   const routes = [
     { id: 'main' as Route, label: 'Main', icon: Home },
-    { id: 'cheats' as Route, label: 'Cheats', icon: Zap }
+    { id: 'cheats' as Route, label: 'Cheats', icon: Zap },
+    { id: 'atkdef' as Route, label: 'ATK-DEF', icon: Sword }
   ]
 
   const handleDoubleClick = () => {

@@ -74,15 +74,15 @@ func NewUltraFastAutoPot(cfg *config.Config, memClient *memory.Client, windowHan
 		lastLogTime:    time.Now(),
 		lastHPPercent:  100,
 		lastSPPercent:  100,
-		predictor:      prediction.NewPredictor(20, 200*time.Millisecond), // 20 muestras, predicción 200ms
+		predictor:      prediction.NewPredictor(constants.AutoPotPredictionSamples, constants.AutoPotPredictionWindow),
 		lastHPCheck:    time.Now(),
 		lastSPCheck:    time.Now(),
 		predictionMode: false,
 		damageRate:     0.0,
 		// Inicializar sistema de spam continuo
 		continuousSpamMode:     false,
-		continuousSpamDuration: 2 * time.Second, // 2 segundos de spam continuo
-		highDamageThreshold:    -25.0,           // -25% HP por segundo = daño alto (menos agresivo)
+		continuousSpamDuration: constants.AutoPotSpamDuration,
+		highDamageThreshold:    -25.0, // -25% HP por segundo = daño alto (menos agresivo)
 	}
 }
 
@@ -111,7 +111,7 @@ func (s *UltraFastAutoPot) ProcessAutoPot(ctx context.Context) error {
 // runUltraFastLoop - Loop optimizado con Ticker
 func (s *UltraFastAutoPot) runUltraFastLoop(ctx context.Context) {
 	// Ticker para AutoPot: 15ms (66 Hz) - crítico para supervivencia
-	ticker := time.NewTicker(15 * time.Millisecond)
+	ticker := time.NewTicker(constants.AutoPotCheckInterval)
 	defer ticker.Stop()
 
 	for {
@@ -149,8 +149,8 @@ func (s *UltraFastAutoPot) processAutoPotUltraFast() {
 	s.predictor.AddSP(float64(spPercent))
 
 	// Sistema de predicción: anticipar el pot 200ms antes
-	predictedHP, hpPredictionValid := s.predictor.PredictHP(200 * time.Millisecond)
-	predictedSP, spPredictionValid := s.predictor.PredictSP(200 * time.Millisecond)
+	predictedHP, hpPredictionValid := s.predictor.PredictHP(constants.AutoPotPredictionWindow)
+	predictedSP, spPredictionValid := s.predictor.PredictSP(constants.AutoPotPredictionWindow)
 
 	// Calcular tendencia de daño (cambio de HP por segundo)
 	damageRate := s.calculateDamageRate()

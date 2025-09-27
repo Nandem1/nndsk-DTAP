@@ -3,7 +3,7 @@
     "hp_pot_key": "F9",
     "sp_pot_key": "F8",
     "hp_percent": 99,
-    "sp_percent": 40,
+    "sp_percent": 90,
     "check_delay_ms": 100,
     "enabled": true,
     "prediction_mode": true
@@ -17,16 +17,15 @@
   "spammer": {
     "enabled": true,
     "keys": [
-      "F1",
-      "F2",
-      "F3",
-      "F4"
+      "F4",
+      "F5",
+      "5",
+      "T",
+      "A",
+      "S"
     ],
-    "delay_ms": 0,
-    "mouse_click": true,
-    "mode": "simple",
-    "key_click_ratio": 3,
-    "click_delay_ms": 50
+    "delay_ms": 1,
+    "mouse_click": true
   },
   "ui": {
     "show_debug": false,
@@ -38,5 +37,18 @@
   },
   "timing": {
     "enabled": false
+  },
+  "atkdef": {
+    "enabled": true,
+    "activation_key": "F3",
+    "switch_delay_ms": 1,
+    "spam_delay_ms": 1,
+    "mouse_click": true,
+    "atk_keys": {
+      "Puño ATK": "9"
+    },
+    "def_keys": {
+      "Mazo DEF": "8"
+    }
   }
 }

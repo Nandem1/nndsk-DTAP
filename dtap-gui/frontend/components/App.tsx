@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Navigation from './Navigation'
 import Main from './Main'
 import Cheats from './Cheats'
+import ATKDEF from './ATKDEF'
 import Toast from './Toast'
 import { ThemeProvider } from '../contexts/ThemeContext'
 import { TransparencyProvider } from '../contexts/TransparencyContext'
@@ -17,7 +18,7 @@ import {
   UpdateConfig 
 } from '../wailsjs/wailsjs/go/main/App'
 
-type Route = 'main' | 'cheats'
+type Route = 'main' | 'cheats' | 'atkdef'
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState<Route>('main')
@@ -35,14 +36,20 @@ export default function App() {
   const [hpPotKey, setHpPotKey] = useState('F1')
   const [spPotKey, setSpPotKey] = useState('F2')
   const [spammerKeys, setSpammerKeys] = useState<string[]>(['F5', 'F6', 'F7'])
-  const [keyClickRatio, setKeyClickRatio] = useState(3)
-  const [clickDelay, setClickDelay] = useState(50)
   const [predictionMode, setPredictionMode] = useState(true)
-  // Nuevos campos configurables
+  // Campos configurables implementados
   const [autopotDelay, setAutopotDelay] = useState(100)
   const [autobuffDelay, setAutobuffDelay] = useState(5000)
   const [mouseClick, setMouseClick] = useState(true)
-  const [spammerMode, setSpammerMode] = useState('ultra_fast')
+  
+  // ATK-DEF state
+  const [atkdefEnabled, setAtkdefEnabled] = useState(false)
+  const [atkdefActivationKey, setAtkdefActivationKey] = useState('SPACE')
+  const [atkdefSwitchDelay, setAtkdefSwitchDelay] = useState(50)
+  const [atkdefSpamDelay, setAtkdefSpamDelay] = useState(1.0)
+  const [atkdefMouseClick, setAtkdefMouseClick] = useState(true)
+  const [atkKeys, setAtkKeys] = useState<Record<string, string>>({})
+  const [defKeys, setDefKeys] = useState<Record<string, string>>({})
   const [toast, setToast] = useState<{
     isVisible: boolean
     message: string
@@ -155,10 +162,16 @@ export default function App() {
         setSpammerEnabled(config.spammer.enabled)
         setSpammerDelay(config.spammer.delay)
         setSpammerKeys(config.spammer.keys || ['F5', 'F6', 'F7'])
-        setKeyClickRatio(config.spammer.key_click_ratio || 3)
-        setClickDelay(config.spammer.click_delay_ms || 50)
         setMouseClick(config.spammer.mouse_click !== false) // Por defecto true
-        setSpammerMode(config.spammer.mode || 'ultra_fast')
+      }
+      if (config.atkdef) {
+        setAtkdefEnabled(config.atkdef.enabled)
+        setAtkdefActivationKey(config.atkdef.activation_key || 'SPACE')
+        setAtkdefSwitchDelay(config.atkdef.switch_delay_ms || 50)
+        setAtkdefSpamDelay(config.atkdef.spam_delay_ms || 1.0)
+        setAtkdefMouseClick(config.atkdef.mouse_click !== false) // Por defecto true
+        setAtkKeys(config.atkdef.atk_keys || {})
+        setDefKeys(config.atkdef.def_keys || {})
       }
     } catch (error) {
       // Error cargando configuración - silenciado
@@ -220,11 +233,17 @@ export default function App() {
         spammer: {
           enabled: spammerEnabled,
           keys: spammerKeys,
-          delay: spammerDelay,
-          mouse_click: mouseClick,
-          mode: spammerMode,
-          key_click_ratio: keyClickRatio,
-          click_delay_ms: clickDelay
+          delay_ms: spammerDelay,
+          mouse_click: mouseClick
+        },
+        atkdef: {
+          enabled: atkdefEnabled,
+          activation_key: atkdefActivationKey,
+          switch_delay_ms: atkdefSwitchDelay,
+          spam_delay_ms: atkdefSpamDelay,
+          mouse_click: atkdefMouseClick,
+          atk_keys: atkKeys,
+          def_keys: defKeys
         },
         ui: {
           show_debug: false,
@@ -283,13 +302,10 @@ export default function App() {
               hpPotKey={hpPotKey}
               spPotKey={spPotKey}
               spammerKeys={spammerKeys}
-              keyClickRatio={keyClickRatio}
-              clickDelay={clickDelay}
               predictionMode={predictionMode}
               autopotDelay={autopotDelay}
               autobuffDelay={autobuffDelay}
               mouseClick={mouseClick}
-              spammerMode={spammerMode}
               onAutoPotChange={setAutoPotEnabled}
               onAutoBuffChange={setAutoBuffEnabled}
               onSpammerChange={setSpammerEnabled}
@@ -301,15 +317,43 @@ export default function App() {
               onHpPotKeyChange={setHpPotKey}
               onSpPotKeyChange={setSpPotKey}
               onSpammerKeysChange={setSpammerKeys}
-              onKeyClickRatioChange={setKeyClickRatio}
-              onClickDelayChange={setClickDelay}
               onPredictionModeChange={setPredictionMode}
               onAutopotDelayChange={setAutopotDelay}
               onAutobuffDelayChange={setAutobuffDelay}
               onMouseClickChange={setMouseClick}
-              onSpammerModeChange={setSpammerMode}
               onSaveConfig={handleConfigUpdate}
             />
+            )}
+            
+            {currentRoute === 'atkdef' && (
+              <ATKDEF
+                key="atkdef"
+                enabled={atkdefEnabled}
+                activationKey={atkdefActivationKey}
+                switchDelay={atkdefSwitchDelay}
+                spamDelay={atkdefSpamDelay}
+                mouseClick={atkdefMouseClick}
+                atkKeys={atkKeys}
+                defKeys={defKeys}
+                onEnabledChange={setAtkdefEnabled}
+                onActivationKeyChange={setAtkdefActivationKey}
+                onSwitchDelayChange={setAtkdefSwitchDelay}
+                onSpamDelayChange={setAtkdefSpamDelay}
+                onMouseClickChange={setAtkdefMouseClick}
+                onATKKeyAdd={(name, key) => setAtkKeys(prev => ({ ...prev, [name]: key }))}
+                onATKKeyRemove={(name) => {
+                  const newKeys = { ...atkKeys }
+                  delete newKeys[name]
+                  setAtkKeys(newKeys)
+                }}
+                onDEFKeyAdd={(name, key) => setDefKeys(prev => ({ ...prev, [name]: key }))}
+                onDEFKeyRemove={(name) => {
+                  const newKeys = { ...defKeys }
+                  delete newKeys[name]
+                  setDefKeys(newKeys)
+                }}
+                onSaveConfig={handleConfigUpdate}
+              />
             )}
             
           </AnimatePresence>

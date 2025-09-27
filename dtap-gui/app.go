@@ -487,7 +487,15 @@ func (a *App) GetConfig() map[string]interface{} {
 			"keys":        a.config.Spammer.Keys,
 			"delay":       a.config.Spammer.Delay,
 			"mouse_click": a.config.Spammer.MouseClick,
-			"mode":        a.config.Spammer.Mode,
+		},
+		"atkdef": map[string]interface{}{
+			"enabled":         a.config.ATKDEF.Enabled,
+			"activation_key":  a.config.ATKDEF.ActivationKey,
+			"switch_delay_ms": a.config.ATKDEF.SwitchDelay,
+			"spam_delay_ms":   a.config.ATKDEF.SpamDelay,
+			"mouse_click":     a.config.ATKDEF.MouseClick,
+			"atk_keys":        a.config.ATKDEF.ATKKeys,
+			"def_keys":        a.config.ATKDEF.DEFKeys,
 		},
 		"ui": map[string]interface{}{
 			"show_debug": a.config.UI.ShowDebug,

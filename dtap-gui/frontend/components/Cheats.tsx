@@ -24,16 +24,12 @@ interface CheatsProps {
   hpPotKey: string
   spPotKey: string
   spammerKeys: string[]
-  // Nuevas props para control de ratio teclas/clicks
-  keyClickRatio: number
-  clickDelay: number
-  // Nueva prop para predicción
+  // Prop para predicción (implementada)
   predictionMode: boolean
-  // Nuevos campos configurables
+  // Campos configurables (implementados)
   autopotDelay: number
   autobuffDelay: number
   mouseClick: boolean
-  spammerMode: string
   onAutoPotChange: (enabled: boolean) => void
   onAutoBuffChange: (enabled: boolean) => void
   onSpammerChange: (enabled: boolean) => void
@@ -45,13 +41,10 @@ interface CheatsProps {
   onHpPotKeyChange: (key: string) => void
   onSpPotKeyChange: (key: string) => void
   onSpammerKeysChange: (keys: string[]) => void
-  onKeyClickRatioChange: (ratio: number) => void
-  onClickDelayChange: (delay: number) => void
   onPredictionModeChange: (enabled: boolean) => void
   onAutopotDelayChange: (delay: number) => void
   onAutobuffDelayChange: (delay: number) => void
   onMouseClickChange: (enabled: boolean) => void
-  onSpammerModeChange: (mode: string) => void
   onSaveConfig: () => void
 }
 
@@ -67,13 +60,10 @@ export default function Cheats({
   hpPotKey,
   spPotKey,
   spammerKeys,
-  keyClickRatio,
-  clickDelay,
   predictionMode,
   autopotDelay,
   autobuffDelay,
   mouseClick,
-  spammerMode,
   onAutoPotChange,
   onAutoBuffChange,
   onSpammerChange,
@@ -85,13 +75,10 @@ export default function Cheats({
   onHpPotKeyChange,
   onSpPotKeyChange,
   onSpammerKeysChange,
-  onKeyClickRatioChange,
-  onClickDelayChange,
   onPredictionModeChange,
   onAutopotDelayChange,
   onAutobuffDelayChange,
   onMouseClickChange,
-  onSpammerModeChange,
   onSaveConfig
 }: CheatsProps) {
   const { transparencyMode } = useTransparency()
@@ -297,66 +284,15 @@ export default function Cheats({
                 />
               </div>
               
-              <div className="space-y-3 pt-2 border-t border-border">
-                <div className="text-sm font-medium text-foreground">Click Control</div>
-                
+              <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-xs">Key/Click Ratio</Label>
-                  <input
-                    type="number"
-                    value={keyClickRatio}
-                    onChange={(e) => onKeyClickRatioChange(Number(e.target.value))}
-                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
-                    min="1"
-                    max="10"
-                    placeholder="3"
-                  />
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {keyClickRatio} tecla(s) por 1 click
-                  </div>
+                  <Label className="text-xs">Mouse Click</Label>
+                  <div className="text-xs text-muted-foreground">Habilitar clicks del mouse</div>
                 </div>
-                
-                <div>
-                  <Label className="text-xs">Click Delay (ms)</Label>
-                  <input
-                    type="number"
-                    value={clickDelay}
-                    onChange={(e) => onClickDelayChange(Number(e.target.value))}
-                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
-                    min="0"
-                    max="1000"
-                    placeholder="50"
-                  />
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Delay adicional entre clicks
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-xs">Mouse Click</Label>
-                    <div className="text-xs text-muted-foreground">Habilitar clicks del mouse</div>
-                  </div>
-                  <Switch
-                    checked={mouseClick}
-                    onCheckedChange={onMouseClickChange}
-                  />
-                </div>
-                
-                <div>
-                  <Label className="text-xs">Spammer Mode</Label>
-                  <select
-                    value={spammerMode}
-                    onChange={(e) => onSpammerModeChange(e.target.value)}
-                    className="w-full mt-1 px-2 py-1 bg-background border border-border rounded text-xs"
-                    disabled
-                  >
-                    <option value="ultra_fast">Ultra Fast</option>
-                  </select>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Único modo disponible
-                  </div>
-                </div>
+                <Switch
+                  checked={mouseClick}
+                  onCheckedChange={onMouseClickChange}
+                />
               </div>
             </CardContent>
           </Card>

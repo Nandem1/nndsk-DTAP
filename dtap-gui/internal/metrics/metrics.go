@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"dtap-gui/pkg/constants"
 	"dtap-gui/pkg/logger"
 )
 
@@ -268,7 +269,7 @@ func (m *Metrics) StartMetricsUpdater(ctx context.Context) {
 		return
 	}
 
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(constants.MetricsUpdateInterval)
 	defer ticker.Stop()
 
 	for {

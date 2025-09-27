@@ -48,7 +48,7 @@ func Start(ctx context.Context, hwnd windows.Handle) {
 					ev.LParam,
 				)
 				// Pequeño delay entre eventos para que el juego los procese
-				time.Sleep(1 * time.Millisecond)
+				time.Sleep(constants.InputMinDelay)
 			}
 		}
 	}()
@@ -71,4 +71,37 @@ func SendLeftClick() {
 	// Enviar mouse down y up con coordenadas (0,0) en lParam
 	inputCh <- InputEvent{Msg: uintptr(constants.WM_LBUTTONDOWN), WParam: 0, LParam: 0}
 	inputCh <- InputEvent{Msg: uintptr(constants.WM_LBUTTONUP), WParam: 0, LParam: 0}
+}
+
+// SendKeyWithHandle envía una tecla usando el handle de ventana específico
+func SendKeyWithHandle(hwnd windows.Handle, keyCode uint32) {
+	if inputCh == nil {
+		return
+	}
+	inputCh <- InputEvent{Msg: uintptr(constants.WM_KEYDOWN), WParam: uintptr(keyCode), LParam: 0}
+	inputCh <- InputEvent{Msg: uintptr(constants.WM_KEYUP), WParam: uintptr(keyCode), LParam: 0}
+}
+
+// SendMouseClickWithHandle envía un click del mouse usando el handle de ventana específico
+func SendMouseClickWithHandle(hwnd windows.Handle) {
+	if inputCh == nil {
+		return
+	}
+	inputCh <- InputEvent{Msg: uintptr(constants.WM_LBUTTONDOWN), WParam: 0, LParam: 0}
+	inputCh <- InputEvent{Msg: uintptr(constants.WM_LBUTTONUP), WParam: 0, LParam: 0}
+}
+
+// IsKeyPressed verifica si una tecla está presionada usando GetAsyncKeyState
+func IsKeyPressed(keyName string) bool {
+	keyCode, exists := GetKeyCode(keyName)
+	if !exists {
+		return false
+	}
+
+	// Usar GetAsyncKeyState para verificar el estado real de la tecla
+	user32 := syscall.NewLazyDLL("user32.dll")
+	getAsyncKeyState := user32.NewProc("GetAsyncKeyState")
+
+	state, _, _ := getAsyncKeyState.Call(uintptr(keyCode))
+	return state&0x8000 != 0
 }

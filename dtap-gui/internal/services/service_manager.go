@@ -8,11 +8,13 @@ import (
 
 	"dtap-gui/internal/input"
 	"dtap-gui/internal/memory"
+	"dtap-gui/internal/normal/atkdef"
 	"dtap-gui/internal/normal/autobuff"
 	"dtap-gui/internal/normal/autopot"
 	"dtap-gui/internal/normal/spammer"
 	"dtap-gui/internal/scheduler"
 	"dtap-gui/pkg/config"
+	"dtap-gui/pkg/constants"
 	"dtap-gui/pkg/logger"
 
 	"golang.org/x/sys/windows"
@@ -25,9 +27,10 @@ type ServiceManager struct {
 	windowHandle windows.Handle
 
 	// Servicios
-	spammerService  *spammer.UltraFastSpammer
+	spammerService  *spammer.Spammer
 	autopotService  *autopot.UltraFastAutoPot
 	autobuffService *autobuff.UltraFastAutoBuff
+	atkdefService   *atkdef.ATKDEFMode
 
 	// Scheduler centralizado
 	scheduler *scheduler.Scheduler
@@ -90,9 +93,17 @@ func (sm *ServiceManager) Start() error {
 	input.Start(sm.ctx, sm.windowHandle)
 
 	// Inicializar servicios
-	sm.spammerService = spammer.NewUltraFastSpammer(sm.config, sm.windowHandle)
+	sm.spammerService = spammer.NewSpammer(sm.config, sm.windowHandle)
 	sm.autopotService = autopot.NewUltraFastAutoPot(sm.config, sm.memClient, sm.windowHandle)
 	sm.autobuffService = autobuff.NewUltraFastAutoBuff(sm.config, sm.memClient, sm.windowHandle)
+	sm.atkdefService = atkdef.NewATKDEFMode(sm.config, sm.windowHandle)
+
+	// Iniciar ATK-DEF si está habilitado
+	if sm.config.ATKDEF.Enabled {
+		if err := sm.atkdefService.Start(); err != nil {
+			logger.Error("❌ Error iniciando ATK-DEF: %v", err)
+		}
+	}
 
 	// Configurar tareas del scheduler con prioridades
 	sm.setupSchedulerTasks()
@@ -113,22 +124,30 @@ func (sm *ServiceManager) setupSchedulerTasks() {
 		sm.scheduler.AddTask(&scheduler.Task{
 			ID:          "autopot",
 			Priority:    scheduler.PriorityCritical,
-			Interval:    15 * time.Millisecond, // 66 Hz - crítico para supervivencia
+			Interval:    constants.AutoPotCheckInterval,
 			Handler:     sm.autopotService.ProcessAutoPot,
 			Enabled:     true,
 			Description: "AutoPot - Supervivencia crítica",
 		})
 	}
 
-	// Spammer - Prioridad alta (combate)
+	// Spammer - Prioridad alta (combate) - 1ms ultra-fast
 	if sm.config.Spammer.Enabled {
+		delay := time.Duration(sm.config.Spammer.Delay) * time.Millisecond
+		if delay <= 0 {
+			delay = constants.SpammerMinDelay // Mínimo 1ms para evitar bugs
+			logger.Warn("🎯 Spammer: delay configurado era %vms, usando mínimo 1ms", sm.config.Spammer.Delay)
+		}
+
+		logger.Info("🎯 Spammer Scheduler: delay=%v (configurado: %vms)", delay, sm.config.Spammer.Delay)
+
 		sm.scheduler.AddTask(&scheduler.Task{
 			ID:          "spammer",
 			Priority:    scheduler.PriorityHigh,
-			Interval:    10 * time.Millisecond, // 100 Hz - balance velocidad/estabilidad
+			Interval:    delay,
 			Handler:     sm.spammerService.ProcessSpammer,
 			Enabled:     true,
-			Description: "Spammer - Combate prioritario",
+			Description: "Spammer - Ultra-fast (1ms+)",
 		})
 	}
 
@@ -137,10 +156,31 @@ func (sm *ServiceManager) setupSchedulerTasks() {
 		sm.scheduler.AddTask(&scheduler.Task{
 			ID:          "autobuff",
 			Priority:    scheduler.PriorityNormal,
-			Interval:    250 * time.Millisecond, // 4 Hz - menos crítico
+			Interval:    constants.AutoBuffCheckInterval,
 			Handler:     sm.autobuffService.ProcessAutoBuff,
 			Enabled:     true,
 			Description: "AutoBuff - Soporte",
+		})
+	}
+
+	// ATK-DEF Mode - Prioridad alta (combate táctico) - Ultra-fast como spammer
+	if sm.config.ATKDEF.Enabled {
+		// Usar el mismo sistema que el spammer - delay configurado
+		delay := time.Duration(sm.config.ATKDEF.SpamDelay) * time.Millisecond
+		if delay <= 0 {
+			delay = constants.SpammerMinDelay // Mínimo 1ms para evitar bugs
+			logger.Warn("🎯 ATK-DEF: delay configurado era %vms, usando mínimo 1ms", sm.config.ATKDEF.SpamDelay)
+		}
+
+		logger.Info("🎯 ATK-DEF Scheduler: delay=%v (configurado: %vms)", delay, sm.config.ATKDEF.SpamDelay)
+
+		sm.scheduler.AddTask(&scheduler.Task{
+			ID:          "atkdef",
+			Priority:    scheduler.PriorityHigh,
+			Interval:    delay, // Usar delay configurado como spammer
+			Handler:     sm.atkdefService.ProcessATKDEF,
+			Enabled:     true,
+			Description: "ATK-DEF Mode - Ultra-fast como spammer",
 		})
 	}
 }
@@ -191,7 +231,7 @@ func (sm *ServiceManager) Stop() error {
 	select {
 	case <-done:
 		logger.Info("✅ ServiceManager detenido correctamente")
-	case <-time.After(5 * time.Second):
+	case <-time.After(constants.ServiceStartTimeout):
 		logger.Warn("⚠️ Timeout esperando que los servicios terminen")
 	}
 
@@ -238,6 +278,15 @@ func (sm *ServiceManager) GetStats() map[string]interface{} {
 		stats["autobuff_last_log"] = autobuffTime
 	}
 
+	if sm.atkdefService != nil {
+		atkdefActivations, atkdefSwitches, atkdefLastActivation, atkdefLastSwitch := sm.atkdefService.GetStats()
+		stats["atkdef_activations"] = atkdefActivations
+		stats["atkdef_switches"] = atkdefSwitches
+		stats["atkdef_last_activation"] = atkdefLastActivation
+		stats["atkdef_last_switch"] = atkdefLastSwitch
+		stats["atkdef_active"] = sm.atkdefService.IsActive()
+	}
+
 	return stats
 }
 
@@ -250,7 +299,7 @@ func (sm *ServiceManager) UpdateConfig(cfg *config.Config) {
 
 	if sm.spammerService != nil {
 		// El spammer no tiene UpdateConfig, se recrea
-		sm.spammerService = spammer.NewUltraFastSpammer(cfg, sm.windowHandle)
+		sm.spammerService = spammer.NewSpammer(cfg, sm.windowHandle)
 	}
 
 	if sm.autopotService != nil {
@@ -259,6 +308,10 @@ func (sm *ServiceManager) UpdateConfig(cfg *config.Config) {
 
 	if sm.autobuffService != nil {
 		sm.autobuffService.UpdateConfig(cfg)
+	}
+
+	if sm.atkdefService != nil {
+		sm.atkdefService.UpdateConfig(cfg)
 	}
 
 	logger.Info("🔄 Configuración actualizada en todos los servicios")
@@ -285,9 +338,13 @@ func (sm *ServiceManager) UpdateConfigInRealTime(cfg *config.Config) error {
 		sm.autobuffService.UpdateConfig(cfg)
 	}
 
+	if sm.atkdefService != nil {
+		sm.atkdefService.UpdateConfig(cfg)
+	}
+
 	// Para el spammer, necesitamos recrearlo si cambió la configuración
 	if sm.spammerService != nil {
-		sm.spammerService = spammer.NewUltraFastSpammer(cfg, sm.windowHandle)
+		sm.spammerService = spammer.NewSpammer(cfg, sm.windowHandle)
 	}
 
 	// Actualizar scheduler con nueva configuración
@@ -318,9 +375,16 @@ func (sm *ServiceManager) applyCurrentConfig() {
 
 	// Recrear Spammer con nueva configuración
 	if sm.spammerService != nil {
-		sm.spammerService = spammer.NewUltraFastSpammer(sm.config, sm.windowHandle)
-		logger.Info("✅ Spammer recreado: enabled=%v, mode=%s, mouse_click=%v",
-			sm.config.Spammer.Enabled, sm.config.Spammer.Mode, sm.config.Spammer.MouseClick)
+		sm.spammerService = spammer.NewSpammer(sm.config, sm.windowHandle)
+		logger.Info("✅ Spammer recreado: enabled=%v, mouse_click=%v",
+			sm.config.Spammer.Enabled, sm.config.Spammer.MouseClick)
+	}
+
+	// Actualizar ATK-DEF
+	if sm.atkdefService != nil {
+		sm.atkdefService.UpdateConfig(sm.config)
+		logger.Info("✅ ATK-DEF configurado: enabled=%v, activation_key=%s",
+			sm.config.ATKDEF.Enabled, sm.config.ATKDEF.ActivationKey)
 	}
 
 	logger.Info("✅ Configuración aplicada correctamente")

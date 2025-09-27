@@ -88,7 +88,7 @@ func NewUltraFastAutoBuff(cfg *config.Config, memClient *memory.Client, windowHa
 		lastSuccessfulBuff:  time.Now(),
 		consecutiveFailures: 0,
 		slowMode:            false,
-		slowModeDelay:       3 * time.Second, // 3 segundos de delay en modo lento
+		slowModeDelay:       constants.AutoBuffSlowModeDelay,
 	}
 }
 
@@ -120,7 +120,7 @@ func (s *UltraFastAutoBuff) ProcessAutoBuff(ctx context.Context) error {
 // runUltraFastLoop - Loop optimizado con Ticker
 func (s *UltraFastAutoBuff) runUltraFastLoop(ctx context.Context) {
 	// Ticker para AutoBuff: 250ms (4 Hz) - menos crítico, optimizado para eficiencia
-	ticker := time.NewTicker(250 * time.Millisecond)
+	ticker := time.NewTicker(constants.AutoBuffCheckInterval)
 	defer ticker.Stop()
 
 	for {
@@ -248,7 +248,7 @@ func (s *UltraFastAutoBuff) adjustSpeedBasedOnSuccess() {
 
 	// Solo activar modo lento si realmente no hay consumibles disponibles
 	// y han pasado más de 5 segundos sin buffs exitosos
-	if now.Sub(s.lastSuccessfulBuff) > 5*time.Second && !s.slowMode {
+	if now.Sub(s.lastSuccessfulBuff) > constants.AutoBuffSuccessTimeout && !s.slowMode {
 		// Verificar si realmente no hay consumibles disponibles
 		if !s.foundGloom && !s.foundAspd {
 			s.slowMode = true

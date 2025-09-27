@@ -7,6 +7,7 @@ import (
 
 	"dtap-gui/internal/metrics"
 	"dtap-gui/pkg/config"
+	"dtap-gui/pkg/constants"
 	"dtap-gui/pkg/logger"
 )
 
@@ -53,7 +54,7 @@ func NewScheduler() *Scheduler {
 		tasks:        make(map[string]*Task),
 		ctx:          ctx,
 		cancel:       cancel,
-		baseInterval: 1 * time.Millisecond, // Intervalo base para máxima precisión
+		baseInterval: constants.SchedulerBaseInterval,
 	}
 }
 

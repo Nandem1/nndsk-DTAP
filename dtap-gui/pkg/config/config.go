@@ -29,12 +29,8 @@ type Config struct {
 	Spammer struct {
 		Enabled    bool     `json:"enabled"`
 		Keys       []string `json:"keys"`
-		Delay      float64  `json:"delay_ms"` // Cambiado a float64 para soportar decimales
+		Delay      float64  `json:"delay_ms"` // Delay en milisegundos
 		MouseClick bool     `json:"mouse_click"`
-		Mode       string   `json:"mode"` // "simple", "adaptive", "ultra", "ultra_fast"
-		// Nuevas opciones para controlar ratio teclas/clicks
-		KeyClickRatio int `json:"key_click_ratio"` // Ratio de teclas por click (ej: 3 = 3 teclas por 1 click)
-		ClickDelay    int `json:"click_delay_ms"`  // Delay adicional para clicks (en ms)
 	} `json:"spammer"`
 
 	UI struct {
@@ -50,6 +46,16 @@ type Config struct {
 	Timing struct {
 		Enabled bool `json:"enabled"`
 	} `json:"timing"`
+
+	ATKDEF struct {
+		Enabled       bool              `json:"enabled"`
+		ActivationKey string            `json:"activation_key"`
+		SwitchDelay   int               `json:"switch_delay_ms"`
+		SpamDelay     float64           `json:"spam_delay_ms"`
+		MouseClick    bool              `json:"mouse_click"`
+		ATKKeys       map[string]string `json:"atk_keys"`
+		DEFKeys       map[string]string `json:"def_keys"`
+	} `json:"atkdef"`
 }
 
 // DefaultConfig returns the default configuration
@@ -84,21 +90,15 @@ func DefaultConfig() *Config {
 			AspdKey:  "F4",
 		},
 		Spammer: struct {
-			Enabled       bool     `json:"enabled"`
-			Keys          []string `json:"keys"`
-			Delay         float64  `json:"delay_ms"`
-			MouseClick    bool     `json:"mouse_click"`
-			Mode          string   `json:"mode"`
-			KeyClickRatio int      `json:"key_click_ratio"`
-			ClickDelay    int      `json:"click_delay_ms"`
+			Enabled    bool     `json:"enabled"`
+			Keys       []string `json:"keys"`
+			Delay      float64  `json:"delay_ms"`
+			MouseClick bool     `json:"mouse_click"`
 		}{
-			Enabled:       false,
-			Keys:          []string{},
-			Delay:         1.0,          // Default to 1ms
-			MouseClick:    true,         // Enable mouse click by default
-			Mode:          "ultra_fast", // Default to ultra_fast mode
-			KeyClickRatio: 3,            // 3 teclas por 1 click por defecto
-			ClickDelay:    50,           // 50ms delay adicional para clicks
+			Enabled:    false,
+			Keys:       []string{},
+			Delay:      1.0,  // Default to 1ms (ultra-fast)
+			MouseClick: true, // Enable mouse click by default
 		},
 		UI: struct {
 			ShowDebug bool   `json:"show_debug"`
@@ -118,6 +118,23 @@ func DefaultConfig() *Config {
 			Enabled bool `json:"enabled"`
 		}{
 			Enabled: false, // Deshabilitado por defecto para evitar problemas de compatibilidad
+		},
+		ATKDEF: struct {
+			Enabled       bool              `json:"enabled"`
+			ActivationKey string            `json:"activation_key"`
+			SwitchDelay   int               `json:"switch_delay_ms"`
+			SpamDelay     float64           `json:"spam_delay_ms"`
+			MouseClick    bool              `json:"mouse_click"`
+			ATKKeys       map[string]string `json:"atk_keys"`
+			DEFKeys       map[string]string `json:"def_keys"`
+		}{
+			Enabled:       false,
+			ActivationKey: "SPACE",
+			SwitchDelay:   50,
+			SpamDelay:     1.0,
+			MouseClick:    true,
+			ATKKeys:       make(map[string]string),
+			DEFKeys:       make(map[string]string),
 		},
 	}
 }
