@@ -80,10 +80,60 @@ func (a *ATKDEFMode) Start() error {
 		return fmt.Errorf("ATK-DEF mode no está habilitado")
 	}
 
-	logger.Info("🎯 Iniciando ATK-DEF Mode - Activation Key: %s", a.config.ATKDEF.ActivationKey)
+	logger.Info("🛡️ Iniciando ATK-DEF Mode - Prioridad EQUIPO (100Hz)")
 	a.isRunning = true
 
+	// Iniciar goroutine dedicada para chequeo crítico
+	go a.runCriticalLoop(a.ctx)
+
 	return nil
+}
+
+// runCriticalLoop - Goroutine dedicada para chequeo ultra rápido de ATK-DEF
+func (a *ATKDEFMode) runCriticalLoop(ctx context.Context) {
+	// Ticker para ATK-DEF: 10ms (100 Hz) - crítico para equipo
+	ticker := time.NewTicker(constants.ATKDEFCheckInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			a.processATKDEFCritical() // ← Chequeo ultra rápido
+		}
+	}
+}
+
+// processATKDEFCritical - Procesamiento crítico para ATK-DEF
+func (a *ATKDEFMode) processATKDEFCritical() {
+	// Verificar si está habilitado
+	if !a.config.ATKDEF.Enabled {
+		return
+	}
+
+	// Verificar si la tecla de activación está presionada
+	activationKey := a.config.ATKDEF.ActivationKey
+	if activationKey == "" {
+		return
+	}
+
+	// Usar el dispatcher de input para verificar el estado de la tecla
+	isPressed := input.IsKeyPressed(activationKey)
+
+	a.mu.Lock()
+	wasActive := a.isActive
+	a.mu.Unlock()
+
+	if isPressed && !wasActive {
+		// Activar modo ATK-DEF
+		logger.Info("🎯 ATK-DEF: Activando modo - tecla %s presionada", activationKey)
+		a.activateMode()
+	} else if !isPressed && wasActive {
+		// Desactivar modo ATK-DEF
+		logger.Info("🎯 ATK-DEF: Desactivando modo - tecla %s soltada", activationKey)
+		a.deactivateMode()
+	}
 }
 
 // Stop detiene el modo ATK-DEF

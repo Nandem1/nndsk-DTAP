@@ -111,6 +111,9 @@ func (sm *ServiceManager) Start() error {
 	// Iniciar scheduler
 	sm.scheduler.Start()
 
+	// Iniciar monitor de muerte (HP = 0)
+	go sm.startDeathMonitor(sm.ctx)
+
 	sm.started = true
 	logger.Info("✅ ServiceManager iniciado correctamente")
 
@@ -457,4 +460,53 @@ func (sm *ServiceManager) IsPaused() bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 	return sm.paused
+}
+
+// startDeathMonitor monitorea continuamente el HP para detectar muerte
+func (sm *ServiceManager) startDeathMonitor(ctx context.Context) {
+	// Ticker para verificar muerte
+	ticker := time.NewTicker(constants.DeathCheckInterval)
+	defer ticker.Stop()
+
+	var isDead bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			// Leer HP actual con manejo robusto de errores
+			hp, _, err := sm.memClient.ReadHP()
+			if err != nil {
+				// Error de memoria: esperar cooldown y reintentar
+				time.Sleep(constants.MemoryErrorCooldown)
+				continue
+			}
+
+			// Lógica optimizada con verificaciones de estado
+			if hp == 0 && !isDead && !sm.IsPaused() {
+				// 💀 MUERTE DETECTADA: Pausar servicios si no están ya pausados
+				logger.Info("💀 MUERTE DETECTADA: HP=0 - Pausando servicios")
+				sm.Pause()
+
+				sm.mu.Lock()
+				isDead = true
+				sm.mu.Unlock()
+
+			} else if hp > 0 && isDead && sm.IsPaused() {
+				// ✨ RESURRECCIÓN DETECTADA: Esperar y reanudar si están pausados
+				logger.Info("✨ RESURRECCIÓN DETECTADA: HP=%d - Esperando %.1fs para reanudar",
+					hp, constants.ResurrectionDelay.Seconds())
+
+				time.Sleep(constants.ResurrectionDelay)
+
+				sm.Resume()
+				logger.Info("✅ Servicios reanudados después de resurrección")
+
+				sm.mu.Lock()
+				isDead = false
+				sm.mu.Unlock()
+			}
+		}
+	}
 }

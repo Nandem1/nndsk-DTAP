@@ -9,18 +9,18 @@
     "prediction_mode": true
   },
   "autobuff": {
-    "enabled": true,
+    "enabled": false,
     "delay_ms": 5000,
-    "gloom_key": "",
+    "gloom_key": "F3",
     "aspd_key": "W"
   },
   "spammer": {
     "enabled": true,
     "keys": [
+      "F1",
+      "F2",
+      "F3",
       "F4",
-      "F5",
-      "5",
-      "T",
       "A",
       "S"
     ],
